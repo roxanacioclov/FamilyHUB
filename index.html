@@ -2,20 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>🌿 Kinship — Family Hub</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script>
-// Load Supabase with fallback
-function loadScript(src, fallback, cb) {
-  const s = document.createElement('script');
-  s.src = src;
-  s.onload = cb;
-  s.onerror = () => { const f = document.createElement('script'); f.src = fallback; f.onload = cb; f.onerror = () => { document.getElementById('loading-screen').innerHTML = '<div style="text-align:center;padding:40px;font-family:sans-serif"><div style="font-size:40px;margin-bottom:16px">⚠️</div><div style="font-size:16px;font-weight:700;margin-bottom:8px">Connection Error</div><div style="font-size:13px;color:#7a7060">Please check your internet connection and refresh the page.</div><button onclick="location.reload()" style="margin-top:16px;padding:10px 20px;background:#5e8b62;color:#fff;border:none;border-radius:10px;font-size:14px;cursor:pointer">Retry</button></div>'; }; document.head.appendChild(f); };
-  document.head.appendChild(s);
-}
-</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -29,325 +18,274 @@ function loadScript(src, fallback, cb) {
   --ink:#1e1b16;--muted:#7a7060;--border:#e0d8cc;
   --bg:#f5f2ed;--surface:#fff;--parchment:#ede8df;
 }
-html,body{height:100%;background:var(--bg);font-family:'Plus Jakarta Sans',sans-serif;color:var(--ink)}
+html,body{height:100%;background:var(--bg);font-family:'Plus Jakarta Sans',sans-serif;color:var(--ink);-webkit-tap-highlight-color:transparent}
 button,input,select,textarea{font-family:inherit}
 input:focus,textarea:focus,select:focus{outline:2px solid var(--sage);outline-offset:1px}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:#c8bfb0;border-radius:4px}
-
-/* Layout */
-#root{max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg);display:flex;flex-direction:column;position:relative}
+#root{max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg);display:flex;flex-direction:column}
 .top-bar{background:var(--bg);border-bottom:1px solid var(--border);padding:9px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:50}
 .top-logo{font-family:'Playfair Display',serif;font-size:18px;color:var(--sage)}
-.content{flex:1;overflow-y:auto;padding-bottom:70px}
+.content{flex:1;overflow-y:auto;padding-bottom:72px}
 .bottom-nav{background:var(--surface);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:8px 0 12px;flex-shrink:0;position:sticky;bottom:0;z-index:50;box-shadow:0 -4px 20px rgba(0,0,0,.07)}
-.nav-btn{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 8px;cursor:pointer;transition:color .2s}
+.nav-btn{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 8px;cursor:pointer;transition:color .2s;-webkit-tap-highlight-color:transparent}
 .nav-btn.active{color:var(--sage)}
 .nav-dot{width:0;height:3px;border-radius:2px;background:var(--sage);transition:width .2s;margin-top:1px}
 .nav-btn.active .nav-dot{width:18px}
-.nav-icon{font-size:20px;line-height:1}
-
-/* Pages */
 .page{display:none;flex-direction:column}
 .page.active{display:flex}
 .page-header{padding:14px 16px 0;flex-shrink:0}
 .family-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
-.page-title{font-size:22px;font-weight:700;color:var(--ink);display:flex;align-items:center;justify-content:space-between;font-family:'Playfair Display',serif}
-
-/* Cards */
+.page-title{font-family:'Playfair Display',serif;font-size:22px;color:var(--ink);display:flex;align-items:center;justify-content:space-between}
 .card{background:var(--surface);border-radius:14px;border:1px solid var(--border);box-shadow:0 2px 10px rgba(0,0,0,.05)}
-
-/* Buttons */
-.btn{border:none;border-radius:10px;font-weight:700;font-size:13px;padding:8px 16px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all .15s}
+.btn{border:none;border-radius:10px;font-weight:700;font-size:13px;padding:8px 16px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:opacity .15s;-webkit-tap-highlight-color:transparent}
+.btn:active{opacity:.8}
 .btn-primary{background:var(--sage);color:#fff}
-.btn-primary:hover{background:#4a7050}
 .btn-secondary{background:var(--parchment);color:var(--muted);border:1px solid var(--border)}
 .btn-danger{background:var(--rose-light);color:var(--rose);border:1px solid #b8507044}
 .btn-sm{padding:6px 13px;font-size:12px}
 .btn-lg{padding:12px 24px;font-size:14px}
 .btn-full{width:100%;justify-content:center}
-
-/* Forms */
-.inp{border:1.5px solid var(--border);border-radius:9px;padding:8px 11px;font-size:13px;color:var(--ink);width:100%;background:var(--surface)}
-.sel{border:1.5px solid var(--border);border-radius:9px;padding:8px 11px;font-size:13px;color:var(--ink);width:100%;background:var(--surface)}
+.inp{border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;font-size:14px;color:var(--ink);width:100%;background:var(--surface);-webkit-appearance:none}
+.sel{border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;font-size:14px;color:var(--ink);width:100%;background:var(--surface)}
 .lbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px}
-.form-row{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-
-/* Modal */
+.form-row{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 .modal-bg{position:fixed;inset:0;background:rgba(20,18,14,.55);z-index:200;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .2s ease}
 .modal-sheet{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:520px;max-height:90vh;display:flex;flex-direction:column;animation:slideUp .3s cubic-bezier(.22,.68,0,1.2)}
 .modal-head{display:flex;align-items:center;justify-content:space-between;padding:15px 18px 11px;border-bottom:1px solid var(--border);flex-shrink:0}
 .modal-title{font-family:'Playfair Display',serif;font-size:18px;color:var(--ink)}
-.modal-close{background:var(--parchment);border:none;border-radius:8px;width:28px;height:28px;font-size:17px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center}
-.modal-body{overflow-y:auto;padding:15px 18px 28px;flex:1}
-
-/* Auth screen */
+.modal-close{background:var(--parchment);border:none;border-radius:8px;width:30px;height:30px;font-size:18px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.modal-body{overflow-y:auto;padding:15px 18px 32px;flex:1}
 .auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg)}
 .auth-card{background:var(--surface);border-radius:20px;padding:32px 28px;width:100%;max-width:400px;box-shadow:0 8px 40px rgba(0,0,0,.1)}
-.auth-logo{font-family:'Playfair Display',serif;font-size:28px;color:var(--sage);text-align:center;margin-bottom:6px}
-.auth-sub{text-align:center;color:var(--muted);font-size:14px;margin-bottom:28px}
-
-/* Onboarding */
-.ob-bg{position:fixed;inset:0;background:rgba(20,18,14,.7);backdrop-filter:blur(6px);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px}
+.loading-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:14px;background:var(--bg)}
+.spinner{width:22px;height:22px;border:2.5px solid var(--border);border-top-color:var(--sage);border-radius:50%;animation:spin .7s linear infinite}
+.chip{font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;display:inline-flex;align-items:center}
+.avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0}
+.tabs{display:flex;border-bottom:1px solid var(--border);overflow-x:auto;padding:0 16px}
+.tab{padding:10px 14px;background:none;border:none;border-bottom:2.5px solid transparent;color:var(--muted);font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;margin-bottom:-1px;transition:color .2s}
+.tab.active{color:var(--sage);border-bottom-color:var(--sage)}
+.tbl{width:100%;border-collapse:collapse;min-width:640px}
+.tbl th{padding:8px 7px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;text-align:left;border-bottom:1px solid var(--border);background:var(--parchment);white-space:nowrap}
+.tbl td{padding:8px 7px;font-size:13px;color:var(--ink);border-bottom:1px solid var(--border);vertical-align:middle}
+.tbl tr:nth-child(even) td{background:#faf8f466}
+.note-card{border-radius:13px;padding:13px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.05);transition:transform .15s}
+.note-card:active{transform:scale(.97)}
+.ob-bg{position:fixed;inset:0;background:rgba(20,18,14,.7);backdrop-filter:blur(6px);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .3s ease}
 .ob-card{background:var(--surface);border-radius:22px;padding:26px;max-width:380px;width:100%}
 .ob-dots{display:flex;gap:5px;justify-content:center;margin-bottom:20px}
 .ob-dot{height:6px;border-radius:99px;background:var(--border);transition:all .3s}
 .ob-dot.active{background:var(--sage);width:18px}
 .ob-dot:not(.active){width:6px}
-.ob-icon{font-size:50px;text-align:center;margin-bottom:14px}
-.ob-title{font-family:'Playfair Display',serif;font-size:21px;color:var(--ink);text-align:center;margin-bottom:9px}
-.ob-body{font-size:13px;color:var(--muted);text-align:center;line-height:1.65;margin-bottom:18px}
-
-/* Chips */
-.chip{font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;display:inline-flex;align-items:center}
-
-/* Avatar */
-.avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0}
-
-/* Sample banner */
-.sample-banner{background:var(--honey-light);border:1px solid #c4892a44;border-radius:9px;padding:7px 11px;margin-bottom:12px;font-size:12px;color:var(--honey);font-weight:600}
-
-/* Spinner */
-.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--sage);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
-.loading-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:14px;background:var(--bg)}
-.loading-screen .logo{font-family:'Playfair Display',serif;font-size:28px;color:var(--sage)}
-
-/* Tabs */
-.tabs{display:flex;border-bottom:1px solid var(--border);padding:0 16px;overflow-x:auto}
-.tab{padding:10px 14px;background:none;border:none;border-bottom:2.5px solid transparent;color:var(--muted);font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;margin-bottom:-1px}
-.tab.active{color:var(--sage);border-bottom-color:var(--sage)}
-
-/* Table */
-.tbl{width:100%;border-collapse:collapse;min-width:650px}
-.tbl th{padding:7px 6px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;text-align:left;border-bottom:1px solid var(--border);background:var(--parchment);white-space:nowrap}
-.tbl td{padding:8px 6px;font-size:13px;color:var(--ink);border-bottom:1px solid var(--border);vertical-align:middle}
-.tbl tr:nth-child(even) td{background:#faf7f266}
-
-/* Note card */
-.note-card{border-radius:13px;padding:13px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.05);transition:transform .15s}
-.note-card:hover{transform:translateY(-2px)}
-
-/* Animations */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,.2);animation:fadeUp .3s ease;pointer-events:none;white-space:nowrap}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
 </style>
 </head>
 <body>
 
-<!-- Loading screen -->
 <div id="loading-screen" class="loading-screen">
-  <div class="logo">🌿 Kinship</div>
+  <div style="font-family:'Playfair Display',serif;font-size:24px;color:var(--sage)">🌿 Kinship</div>
   <div class="spinner"></div>
   <div style="font-size:13px;color:var(--muted)">Loading your family hub…</div>
 </div>
 
-<!-- Auth screen -->
 <div id="auth-screen" class="auth-screen" style="display:none">
   <div class="auth-card">
-    <div class="auth-logo">🌿 Kinship</div>
-    <div class="auth-sub">Your family's all-in-one hub</div>
-    <div id="auth-mode-login">
-      <div class="form-row">
-        <label class="lbl">Email</label>
-        <input class="inp" type="email" id="auth-email" placeholder="your@email.com">
-      </div>
-      <div class="form-row">
-        <label class="lbl">Password</label>
-        <input class="inp" type="password" id="auth-password" placeholder="••••••••">
-      </div>
-      <button class="btn btn-primary btn-full btn-lg" style="margin-bottom:12px" onclick="handleLogin()">Sign In</button>
-      <button class="btn btn-secondary btn-full" onclick="showAuthMode('signup')">Create account</button>
-      <div id="auth-msg" style="margin-top:10px;font-size:13px;color:var(--rose);text-align:center"></div>
+    <div style="font-family:'Playfair Display',serif;font-size:26px;color:var(--sage);text-align:center;margin-bottom:4px">🌿 Kinship</div>
+    <div style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:26px">Your family's all-in-one hub</div>
+    <div id="auth-login">
+      <div class="form-row"><label class="lbl">Email</label><input class="inp" type="email" id="a-email" placeholder="your@email.com" autocomplete="email"></div>
+      <div class="form-row"><label class="lbl">Password</label><input class="inp" type="password" id="a-pass" placeholder="••••••••" autocomplete="current-password"></div>
+      <button class="btn btn-primary btn-full btn-lg" style="margin-bottom:10px" onclick="doLogin()">Sign In</button>
+      <button class="btn btn-secondary btn-full" onclick="switchAuth('signup')">Create account</button>
+      <div id="a-msg" style="margin-top:10px;font-size:13px;color:var(--rose);text-align:center;min-height:18px"></div>
     </div>
-    <div id="auth-mode-signup" style="display:none">
-      <div class="form-row">
-        <label class="lbl">Your Name</label>
-        <input class="inp" type="text" id="signup-name" placeholder="Your name">
-      </div>
-      <div class="form-row">
-        <label class="lbl">Email</label>
-        <input class="inp" type="email" id="signup-email" placeholder="your@email.com">
-      </div>
-      <div class="form-row">
-        <label class="lbl">Password</label>
-        <input class="inp" type="password" id="signup-password" placeholder="min 6 characters">
-      </div>
-      <button class="btn btn-primary btn-full btn-lg" style="margin-bottom:12px" onclick="handleSignup()">Create Account</button>
-      <button class="btn btn-secondary btn-full" onclick="showAuthMode('login')">Already have an account</button>
-      <div id="signup-msg" style="margin-top:10px;font-size:13px;color:var(--rose);text-align:center"></div>
+    <div id="auth-signup" style="display:none">
+      <div class="form-row"><label class="lbl">Your Name</label><input class="inp" type="text" id="s-name" placeholder="Your name" autocomplete="name"></div>
+      <div class="form-row"><label class="lbl">Email</label><input class="inp" type="email" id="s-email" placeholder="your@email.com" autocomplete="email"></div>
+      <div class="form-row"><label class="lbl">Password</label><input class="inp" type="password" id="s-pass" placeholder="min 6 characters" autocomplete="new-password"></div>
+      <button class="btn btn-primary btn-full btn-lg" style="margin-bottom:10px" onclick="doSignup()">Create Account</button>
+      <button class="btn btn-secondary btn-full" onclick="switchAuth('login')">Already have an account</button>
+      <div id="s-msg" style="margin-top:10px;font-size:13px;color:var(--rose);text-align:center;min-height:18px"></div>
     </div>
   </div>
 </div>
 
-<!-- Main app -->
 <div id="root" style="display:none">
-  <!-- Top bar -->
   <div class="top-bar">
     <div class="top-logo">🌿 Kinship</div>
     <div style="display:flex;align-items:center;gap:8px">
-      <span id="family-name-badge" style="font-size:12px;font-weight:700;color:var(--muted)"></span>
-      <button class="btn btn-secondary btn-sm" onclick="handleSignOut()">Sign out</button>
+      <span id="fam-badge" style="font-size:11px;font-weight:700;color:var(--muted)"></span>
+      <button class="btn btn-secondary btn-sm" onclick="doSignOut()">Sign out</button>
     </div>
   </div>
-
-  <!-- Content -->
-  <div class="content" id="main-content">
+  <div class="content" id="content">
     <div id="page-calendar" class="page active"></div>
     <div id="page-notebook" class="page"></div>
     <div id="page-meds" class="page"></div>
     <div id="page-insights" class="page"></div>
     <div id="page-settings" class="page"></div>
   </div>
-
-  <!-- Bottom Nav -->
   <nav class="bottom-nav">
-    <button class="nav-btn active" data-page="calendar" onclick="goTo('calendar')">
-      <span class="nav-icon">🗓</span>Calendar<div class="nav-dot"></div>
-    </button>
-    <button class="nav-btn" data-page="notebook" onclick="goTo('notebook')">
-      <span class="nav-icon">📓</span>Notebook<div class="nav-dot"></div>
-    </button>
-    <button class="nav-btn" data-page="meds" onclick="goTo('meds')">
-      <span class="nav-icon">💊</span>Meds<div class="nav-dot"></div>
-    </button>
-    <button class="nav-btn" data-page="insights" onclick="goTo('insights')">
-      <span class="nav-icon">📊</span>Insights<div class="nav-dot"></div>
-    </button>
-    <button class="nav-btn" data-page="settings" onclick="goTo('settings')">
-      <span class="nav-icon">⚙️</span>Settings<div class="nav-dot"></div>
-    </button>
+    <button class="nav-btn active" data-page="calendar" onclick="goTo('calendar')"><span style="font-size:20px;line-height:1">🗓</span>Calendar<div class="nav-dot"></div></button>
+    <button class="nav-btn" data-page="notebook" onclick="goTo('notebook')"><span style="font-size:20px;line-height:1">📓</span>Notebook<div class="nav-dot"></div></button>
+    <button class="nav-btn" data-page="meds" onclick="goTo('meds')"><span style="font-size:20px;line-height:1">💊</span>Meds<div class="nav-dot"></div></button>
+    <button class="nav-btn" data-page="insights" onclick="goTo('insights')"><span style="font-size:20px;line-height:1">📊</span>Insights<div class="nav-dot"></div></button>
+    <button class="nav-btn" data-page="settings" onclick="goTo('settings')"><span style="font-size:20px;line-height:1">⚙️</span>Settings<div class="nav-dot"></div></button>
   </nav>
-
-  <!-- Modal -->
   <div id="modal-root"></div>
-  <!-- Onboarding -->
   <div id="ob-root"></div>
 </div>
 
 <script>
-// ── SUPABASE ─────────────────────────────────────────────────────────────────
-const SUPA_URL = 'https://chesapmdtycmzzzmcclk.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoZXNhcG1kdHljbXp6em1jY2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NjM3NjAsImV4cCI6MjA5MTAzOTc2MH0.WeqLjqeDQrN3UrpsO13RgNJdK2-WKKR6E-M8XNItKfA';
+// ── SUPABASE ──────────────────────────────────────────────────────────────────
+const SB_URL='https://chesapmdtycmzzzmcclk.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoZXNhcG1kdHljbXp6em1jY2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NjM3NjAsImV4cCI6MjA5MTAzOTc2MH0.WeqLjqeDQrN3UrpsO13RgNJdK2-WKKR6E-M8XNItKfA';
 let sb;
-try {
-  sb = supabase.createClient(SUPA_URL, SUPA_KEY);
-} catch(e) {
-  console.error('Supabase init failed:', e);
-}
+try { sb = supabase.createClient(SB_URL, SB_KEY); } catch(e) { console.error('Supabase init failed',e); }
 
-// ── CONSTANTS ────────────────────────────────────────────────────────────────
-const T = {
-  sage:'#5e8b62',sageMid:'#8ab88e',sageLight:'#d4e8d6',
-  terra:'#b85c38',terraLight:'#f2ddd4',
-  sky:'#3a7ca5',skyLight:'#d0e4f0',
-  plum:'#7c5c8a',plumLight:'#e8d8f0',
-  honey:'#c4892a',honeyLight:'#f5e4c4',
-  rose:'#b85070',roseLight:'#f0d4de',
-  ink:'#1e1b16',muted:'#7a7060',border:'#e0d8cc',
-  bg:'#f5f2ed',surface:'#fff',parchment:'#ede8df'
-};
-const ET = {
-  social:{label:'Social Event',icon:'🎉',color:T.sky,bg:T.skyLight,desc:'Gatherings, outings, celebrations'},
-  health:{label:'Health Event',icon:'❤️',color:T.rose,bg:T.roseLight,desc:'Appointments, treatments, check-ups'},
-  wellness:{label:'Wellness Log',icon:'🌿',color:T.sage,bg:T.sageLight,desc:'Daily health summary'},
-  task:{label:'Task',icon:'✅',color:T.honey,bg:T.honeyLight,desc:'To-dos assigned to family members'}
-};
+// ── CONSTANTS ─────────────────────────────────────────────────────────────────
+const T={sage:'#5e8b62',sageMid:'#8ab88e',sageLight:'#d4e8d6',terra:'#b85c38',terraLight:'#f2ddd4',sky:'#3a7ca5',skyLight:'#d0e4f0',plum:'#7c5c8a',plumLight:'#e8d8f0',honey:'#c4892a',honeyLight:'#f5e4c4',rose:'#b85070',roseLight:'#f0d4de',ink:'#1e1b16',muted:'#7a7060',border:'#e0d8cc',bg:'#f5f2ed',surface:'#fff',parchment:'#ede8df'};
+const ET={social:{label:'Social Event',icon:'🎉',color:T.sky,bg:T.skyLight,desc:'Gatherings, outings, celebrations'},health:{label:'Health Event',icon:'❤️',color:T.rose,bg:T.roseLight,desc:'Appointments, treatments, check-ups'},wellness:{label:'Wellness Log',icon:'🌿',color:T.sage,bg:T.sageLight,desc:'Daily health summary — sleep, mood, exercise'},task:{label:'Task',icon:'✅',color:T.honey,bg:T.honeyLight,desc:'To-dos assigned to family members'}};
 const MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-const MEMBER_COLORS=[T.sage,T.terra,T.sky,T.plum,T.honey,T.rose];
+const DNF=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const MOODS=['😄 Great','😊 Good','😐 Okay','😔 Low','😢 Sad','😤 Stressed','😴 Tired'];
-const CURRENCIES=[
-  {code:'EUR',sym:'€'},{code:'USD',sym:'$'},{code:'GBP',sym:'£'},{code:'RON',sym:'lei'},
-  {code:'CHF',sym:'CHF'},{code:'CAD',sym:'CA$'},{code:'AUD',sym:'A$'},{code:'JPY',sym:'¥'},
-  {code:'BRL',sym:'R$'},{code:'INR',sym:'₹'},{code:'SEK',sym:'kr'},{code:'PLN',sym:'zł'},
-  {code:'HUF',sym:'Ft'},{code:'AED',sym:'د.إ'},{code:'SGD',sym:'S$'}
+const MCOLORS=[T.sage,T.terra,T.sky,T.plum,T.honey,T.rose];
+const CURRENCIES=[{code:'EUR',sym:'€'},{code:'USD',sym:'$'},{code:'GBP',sym:'£'},{code:'RON',sym:'lei'},{code:'CHF',sym:'CHF'},{code:'CAD',sym:'CA$'},{code:'AUD',sym:'A$'},{code:'JPY',sym:'¥'},{code:'BRL',sym:'R$'},{code:'INR',sym:'₹'},{code:'SEK',sym:'kr'},{code:'NOK',sym:'kr'},{code:'DKK',sym:'kr'},{code:'PLN',sym:'zł'},{code:'HUF',sym:'Ft'},{code:'AED',sym:'د.إ'},{code:'SGD',sym:'S$'},{code:'HKD',sym:'HK$'}];
+const NOTE_COLORS=['#d4e8d6','#f0d4de','#f5e4c4','#d0e4f0','#e8d8f0','#ede8df','#f2ddd4'];
+
+// 52 Weekly Challenges
+const CHALLENGES=[
+  {title:'The Hydration Week 💧',body:'Everyone challenges themselves to drink at least 1.5 litres of water every day this week. Track it together and celebrate on Friday!',tips:['Set hourly reminders','Add fruit to water','Glass of water right when you wake up']},
+  {title:'Screen-Free Evenings 📵',body:'Try one screen-free evening this week. No phones, no TV — just family time. Games, walks, cooking together.',tips:['Pick a game everyone loves','Cook a new recipe together','Go for an evening walk']},
+  {title:'Family Active Weekend 🏃',body:'Plan one outdoor activity as a family this weekend. A walk, a bike ride, a swim — moving together is the goal.',tips:['Pick what everyone enjoys','Even 20 minutes counts','Celebrate with a healthy treat']},
+  {title:'Rest & Recharge 😴',body:'Aim to be in bed 30 minutes earlier than usual every night this week. Better sleep changes everything.',tips:['No screens 1hr before bed','Same bedtime for everyone','Try chamomile tea']},
+  {title:'Gratitude Table 🙏',body:'Share one thing you\'re grateful for at dinner every evening this week. Simple, powerful, connecting.',tips:['Let kids go first','Write them in the Notebook','No repeats allowed!']},
+  {title:'Cook Together Night 🍳',body:'Pick one evening this week to cook dinner together as a family. Everyone gets a role.',tips:['Let kids choose the recipe','Assign prep tasks by age','Make it fun, not perfect']},
+  {title:'Move for 20 Challenge 🏅',body:'Every family member commits to at least 20 minutes of movement every day this week. Any activity counts!',tips:['Dance counts!','Walk to the shops','Morning stretches together']},
+  {title:'The Veggie Challenge 🥦',body:'Try to include a vegetable in every meal this week. Get creative and let kids pick one new veggie to try.',tips:['Smoothies count','Try roasting for new flavours','Kids cook the veggie one night']},
+  {title:'Compliment Week 💛',body:'Every day this week, each family member gives one genuine compliment to another member. Watch the mood lift!',tips:['Make it specific','Write one down in the Notebook','Include grandparents by message']},
+  {title:'Digital Detox Morning ☀️',body:'No phones for the first 30 minutes after waking up, every day this week. Start the day with intention.',tips:['Put phones in another room','Have breakfast together first','Read or stretch instead']},
+  {title:'Nature Walk Weekend 🌳',body:'Get outside in nature this weekend — a forest, a park, a beach. Leave devices behind.',tips:['Bring a picnic','Let kids lead the route','Collect something from nature']},
+  {title:'Healthy Breakfast Week 🥣',body:'Commit to a healthy breakfast every morning this week — no skipping, no junk. Set the day up right.',tips:['Prep overnight oats the night before','Involve kids in making it','Try a new fruit each day']},
+  {title:'The Kindness Challenge 💌',body:'Each family member does one small act of kindness every day this week — for each other or the world.',tips:['Leave a kind note','Help without being asked','Smile at a stranger']},
+  {title:'Early Bird Week 🌅',body:'Wake up 20 minutes earlier than usual every day. Use the time for yourself — stretch, read, breathe.',tips:['Prepare clothes the night before','Go to bed earlier too','Keep it quiet and calm']},
+  {title:'Journaling Week 📝',body:'Everyone writes 3 sentences in a journal each evening this week. How was your day? What are you thinking?',tips:['Use the Notebook!','No rules, no judgement','Read aloud if you want to share']},
+  {title:'Sugar-Free Day 🍎',body:'Challenge yourselves to one completely sugar-free day this week. Read labels, get creative with snacks.',tips:['Fruit is great for sweet cravings','Check drinks too','Plan meals in advance']},
+  {title:'Family Reading Hour 📚',body:'Set aside one hour this week for the whole family to read. Same room, different books.',tips:['Pick a cosy spot','No phones allowed','Share what you read after']},
+  {title:'Stretching Morning 🧘',body:'5 minutes of stretching every morning this week. Together if possible.',tips:['YouTube has great family routines','Do it before breakfast','Kids can lead it!']},
+  {title:'Declutter Challenge 🗂️',body:'Each family member picks one drawer, shelf, or area to tidy up this week. Donate what you don\'t need.',tips:['Start small — one drawer','Make it a game for kids','Donate to a local charity']},
+  {title:'Try a New Food 🌮',body:'This week, everyone tries at least one food they\'ve never had before. Log it in the Notebook!',tips:['Let kids pick their new food','Cook it together','No pressure to like it — just try!']},
+  {title:'Outdoor Breakfast 🌞',body:'Have breakfast outside at least one morning this weekend. Even a balcony counts!',tips:['Prepare something simple','Bring a blanket if cool','Watch the day begin together']},
+  {title:'No Complaining Day 🌈',body:'Pick one day this week where everyone tries to go the whole day without complaining. Replace complaints with solutions.',tips:['It\'s harder than it sounds!','Gentle reminders, not policing','Laugh when someone slips']},
+  {title:'Family Playlist 🎵',body:'Each family member adds 3 songs to a shared playlist. Play it during dinner this week.',tips:['No judgement on song choices','Try to find one song you all love','Dance while cooking']},
+  {title:'Step Count Week 👟',body:'Everyone tracks their steps this week. Set a family goal and celebrate if you hit it together.',tips:['Park further away on purpose','Take the stairs','Evening walk after dinner']},
+  {title:'Mindful Mealtimes 🍽️',body:'No screens at the table this entire week. Just food, conversation, and presence.',tips:['Keep phones in another room','Ask open questions, not yes/no','Share one thing from your day']},
+  {title:'Creativity Weekend 🎨',body:'Do one creative activity together this weekend — drawing, building, crafting, baking, anything.',tips:['No skill needed, just fun','Let kids lead the activity','Display what you make!']},
+  {title:'The Breathing Challenge 🫁',body:'Take 5 deep, slow breaths together before dinner every evening this week. A 2-minute reset.',tips:['Breathe in for 4, out for 6','Do it in silence','Notice how it changes the mood']},
+  {title:'Posture Week 🏋️',body:'Everyone becomes aware of their posture this week. Sit up straight, shoulders back, screen at eye level.',tips:['Set a reminder every hour','Stand up and stretch when it buzzes','Kids can remind each other']},
+  {title:'Reach Out Week 📞',body:'Each family member reaches out to someone they haven\'t spoken to in a while — a grandparent, friend, cousin.',tips:['A voice call, not just a text','Share a memory with them','Invite them to visit']},
+  {title:'Smoothie Week 🥤',body:'Make a smoothie every morning this week as a family. Experiment with ingredients.',tips:['Sneak in spinach — you won\'t taste it!','Let kids design their own','Freeze leftovers as ice lollies']},
+  {title:'The Laughter Challenge 😂',body:'Watch a funny film or show together this weekend. Laughter is medicine.',tips:['Let kids pick the film','Have popcorn and blankets','Re-watch a childhood favourite']},
+  {title:'Mindful Media Week 📺',body:'Track how much time everyone spends on screens this week. Awareness is the first step.',tips:['Use phone screen time settings','No judgement, just curiosity','Set one screen-free hour per day']},
+  {title:'Random Acts of Kindness 🌻',body:'As a family, complete 5 random acts of kindness this week — for neighbours, strangers, or each other.',tips:['Help a neighbour','Leave a kind note somewhere','Pay for someone\'s coffee']},
+  {title:'The Early Sleep Challenge 🌙',body:'Everyone in bed 45 minutes earlier than usual this weekend. Prioritise real rest.',tips:['Dim lights an hour before','Read instead of scrolling','Try a sleep meditation']},
+  {title:'Family Trivia Night 🧠',body:'Host a family trivia night this weekend. Make teams, keep score, have fun.',tips:['Use a free trivia app','Make up rounds about your own family','Winner picks Saturday\'s activity next week']},
+  {title:'Plant Something 🌱',body:'Plant something this weekend — a herb, a flower, a vegetable. Watch it grow together.',tips:['Herbs in the kitchen window work great','Let kids water it daily','Log the date you planted in the Notebook']},
+  {title:'Family Letter Week ✉️',body:'Each family member writes a short letter to another member this week. Keep it, cherish it.',tips:['One page is enough','Share something you never say out loud','Kids can draw pictures instead']},
+  {title:'Slow Morning Weekend ☕',body:'This weekend, have one morning with no rushing, no plans, no agenda. Just slow, peaceful time.',tips:['No alarms if possible','Make a big breakfast together','Stay in pyjamas as long as you want']},
+  {title:'Clean Water Week 💦',body:'Drink only water and herbal tea this week — no juice, no fizzy drinks, no coffee for those who can.',tips:['Fruit-infused water tastes great','Kids can decorate their water bottles','Track it as a family']},
+  {title:'Family Goals Meeting 🎯',body:'Sit down together and each person shares one goal for the next month. Write them in the Notebook.',tips:['Keep goals small and achievable','Support each other\'s goals','Check back in 4 weeks']},
+  {title:'Hobby Hour 🎯',body:'Each family member spends 1 hour this week on a hobby or interest they love but never have time for.',tips:['No chores allowed during this hour','Share what you did at dinner','Teach each other your hobbies']},
+  {title:'Breakfast in Bed Day 🛏️',body:'Surprise one family member with breakfast in bed this weekend. Let kids plan it.',tips:['Keep it simple — toast and fruit works','Add a handwritten note','Take a photo to remember it']},
+  {title:'The Silence Challenge 🤫',body:'Try 10 minutes of complete silence together this week. Just sit, breathe, and be.',tips:['Outside in nature is ideal','Set a timer so no one peeks','Notice what you observe']},
+  {title:'Dance Party 💃',body:'Have a spontaneous dance party in your kitchen this week. 3 songs minimum.',tips:['Let each person pick one song','No rules, no judgement','Film it for the memories']},
+  {title:'Afternoon Nap Permission 😴',body:'This weekend, everyone gets permission — and encouragement — to take a real afternoon rest.',tips:['Even 20 minutes helps','No guilt allowed','Put phones away during rest']},
+  {title:'Story Sharing Night 🌟',body:'Each family member shares a childhood memory or funny story this week at dinner.',tips:['Ask grandparents to join by video call','Write the best ones in the Notebook','Kids love hearing parent stories']},
+  {title:'Family Volunteering 🤝',body:'Find one small way to help your community together this week — a litter pick, helping a neighbour.',tips:['Even 30 minutes makes a difference','Kids remember these experiences','Check local community groups for ideas']},
+  {title:'Photo Walk 📸',body:'Go for a walk this weekend where everyone takes photos of things that catch their eye. Share them.',tips:['Even phone cameras work great','Print your favourite one','Make it a monthly tradition']},
+  {title:'Unplug Before Bed 🌙',body:'Every family member puts their phone in another room 1 hour before bed this week.',tips:['Charge phones in the kitchen','Replace with reading or conversation','Notice the difference in sleep quality']},
+  {title:'Cook From Scratch Night 👨‍🍳',body:'Make a meal completely from scratch this weekend — no packets, no shortcuts. All hands on deck.',tips:['Pick something everyone likes','Assign roles to each family member','Enjoy it together at the table']},
+  {title:'Weekend Adventure 🗺️',body:'Explore somewhere new this weekend — a neighbourhood you\'ve never walked, a nearby town, a new park.',tips:['No plan needed, just go','Take photos of interesting things','Stop for a treat along the way']},
+  {title:'The 5-Minute Tidy 🧹',body:'Every evening this week, everyone does exactly 5 minutes of tidying before bed. Small effort, big result.',tips:['Set a timer — it\'s actually fun','Everyone does their own space','Acknowledge the effort, not just the result']},
+  {title:'Words of Affirmation Week 💬',body:'Every morning this week, say one positive thing to each family member before you leave for the day.',tips:['Be specific, not generic','Post-it notes on the mirror work too','Kids thrive on this — watch their confidence']},
 ];
 
-// ── STATE ────────────────────────────────────────────────────────────────────
-let APP = {
-  user: null,
-  family: null,
-  members: [],
-  events: [],
-  notes: [],
-  noteGroups: [],
-  dailyMeds: [],
-  occMeds: [],
-  currentPage: 'calendar',
-  calView: 'month',
-  calDate: new Date(),
-  calFilterType: 'all',
-  calFilterMember: 'all',
-  calSearch: '',
-  settingsTab: 'family',
-  noteFilterGroup: 'all',
-  noteSearch: '',
-  showOnboarding: false,
-  obStep: 0,
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let A={
+  user:null,family:null,members:[],events:[],notes:[],noteGroups:[],
+  dailyMeds:[],occMeds:[],
+  page:'calendar',calView:'month',calDate:new Date(),
+  calFType:'all',calFMember:'all',calSearch:'',
+  settingsTab:'family',noteFGroup:'all',noteSearch:'',
+  showOB:false,obStep:0,
 };
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
-const fmt = d => { if(!d) return ''; const x=new Date(d); return `${String(x.getDate()).padStart(2,'0')}/${String(x.getMonth()+1).padStart(2,'0')}/${x.getFullYear()}`; };
-const toISO = d => d ? new Date(d).toISOString().split('T')[0] : '';
-const todayD = () => { const d=new Date(); d.setHours(0,0,0,0); return d; };
-const addDays = (d,n) => { const r=new Date(d); r.setDate(r.getDate()+n); return r; };
-const isSameDay = (a,b) => { const da=new Date(a),db=new Date(b); return da.getFullYear()===db.getFullYear()&&da.getMonth()===db.getMonth()&&da.getDate()===db.getDate(); };
-const av = (m,sz=28) => `<div class="avatar" style="width:${sz}px;height:${sz}px;background:${m.color}22;border:2px solid ${m.color};font-size:${Math.round(sz*.38)}px;color:${m.color}">${m.avatar||m.name[0]}</div>`;
-const sym = () => CURRENCIES.find(c=>c.code===(APP.family?.currency||'EUR'))?.sym||'€';
-const getMember = id => APP.members.find(m=>m.id===id);
+const fmt=d=>{if(!d)return'';const x=new Date(d);return`${String(x.getDate()).padStart(2,'0')}/${String(x.getMonth()+1).padStart(2,'0')}/${x.getFullYear()}`;};
+const toISO=d=>d?new Date(d).toISOString().split('T')[0]:'';
+const todayD=()=>{const d=new Date();d.setHours(0,0,0,0);return d;};
+const addDays=(d,n)=>{const r=new Date(d);r.setDate(r.getDate()+n);return r;};
+const isSameDay=(a,b)=>{const da=new Date(a),db=new Date(b);return da.getFullYear()===db.getFullYear()&&da.getMonth()===db.getMonth()&&da.getDate()===db.getDate();};
+const getMem=id=>A.members.find(m=>m.id===id);
+const symC=()=>CURRENCIES.find(c=>c.code===(A.family?.currency||'EUR'))?.sym||'€';
+const av=(m,sz=28)=>`<div class="avatar" style="width:${sz}px;height:${sz}px;background:${m.color}22;border:2px solid ${m.color};font-size:${Math.round(sz*.38)}px;color:${m.color}">${m.avatar||m.name[0]}</div>`;
 
-function showToast(msg, isError=false) {
-  const t = document.createElement('div');
-  t.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:${isError?T.rose:T.sage};color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,.2);animation:fadeUp .3s ease`;
-  t.textContent = msg;
+function toast(msg,isErr=false){
+  const t=document.createElement('div');
+  t.className='toast';
+  t.style.background=isErr?T.rose:T.sage;
+  t.textContent=msg;
   document.body.appendChild(t);
-  setTimeout(()=>t.remove(), 2800);
+  setTimeout(()=>t.remove(),2800);
 }
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
-function showAuthMode(mode) {
-  document.getElementById('auth-mode-login').style.display = mode==='login'?'block':'none';
-  document.getElementById('auth-mode-signup').style.display = mode==='signup'?'block':'none';
+function switchAuth(m){
+  document.getElementById('auth-login').style.display=m==='login'?'block':'none';
+  document.getElementById('auth-signup').style.display=m==='signup'?'block':'none';
+  document.getElementById('a-msg').textContent='';
+  document.getElementById('s-msg').textContent='';
 }
 
-async function handleLogin() {
-  const email = document.getElementById('auth-email').value.trim();
-  const password = document.getElementById('auth-password').value;
-  const msg = document.getElementById('auth-msg');
-  if(!email||!password){msg.textContent='Please fill in all fields.';return;}
+async function doLogin(){
+  const email=document.getElementById('a-email').value.trim();
+  const pass=document.getElementById('a-pass').value;
+  const msg=document.getElementById('a-msg');
+  if(!email||!pass){msg.textContent='Please fill in all fields.';return;}
   msg.textContent='Signing in…';
-  const {error} = await sb.auth.signInWithPassword({email,password});
-  if(error){msg.textContent=error.message;}
+  const{error}=await sb.auth.signInWithPassword({email,password:pass});
+  if(error)msg.textContent=error.message;
 }
 
-async function handleSignup() {
-  const name = document.getElementById('signup-name').value.trim();
-  const email = document.getElementById('signup-email').value.trim();
-  const password = document.getElementById('signup-password').value;
-  const msg = document.getElementById('signup-msg');
-  if(!name||!email||!password){msg.textContent='Please fill in all fields.';return;}
-  if(password.length<6){msg.textContent='Password must be at least 6 characters.';return;}
+async function doSignup(){
+  const name=document.getElementById('s-name').value.trim();
+  const email=document.getElementById('s-email').value.trim();
+  const pass=document.getElementById('s-pass').value;
+  const msg=document.getElementById('s-msg');
+  if(!name||!email||!pass){msg.textContent='Please fill in all fields.';return;}
+  if(pass.length<6){msg.textContent='Password must be at least 6 characters.';return;}
   msg.textContent='Creating account…';
-  const {data,error} = await sb.auth.signUp({email,password,options:{data:{name}}});
+  const{error}=await sb.auth.signUp({email,password:pass,options:{data:{name}}});
   if(error){msg.textContent=error.message;return;}
   msg.style.color=T.sage;
   msg.textContent='Account created! Signing you in…';
 }
 
-async function handleSignOut() {
+async function doSignOut(){
   await sb.auth.signOut();
-  APP = {...APP, user:null, family:null, members:[], events:[], notes:[], noteGroups:[], dailyMeds:[], occMeds:[]};
-  document.getElementById('root').style.display='none';
-  document.getElementById('auth-screen').style.display='flex';
+  location.reload();
 }
 
-// ── DATA LOADING ─────────────────────────────────────────────────────────────
-async function loadAllData() {
-  const [fam, mems, evts, ngrps, nts, dm, om] = await Promise.all([
-    sb.from('families').select('*').single(),
+// ── DATA LOADING ──────────────────────────────────────────────────────────────
+async function loadAll(){
+  const[fam,mems,evts,ngrps,nts,dm,om]=await Promise.all([
+    sb.from('families').select('*').maybeSingle(),
     sb.from('family_members').select('*').order('created_at'),
     sb.from('events').select('*').order('date'),
     sb.from('note_groups').select('*').order('created_at'),
@@ -355,146 +293,129 @@ async function loadAllData() {
     sb.from('daily_meds').select('*').order('created_at'),
     sb.from('occasional_meds').select('*').order('created_at'),
   ]);
-  if(fam.data) APP.family = fam.data;
-  if(mems.data) APP.members = mems.data;
-  if(evts.data) APP.events = evts.data;
-  if(ngrps.data) APP.noteGroups = ngrps.data;
-  if(nts.data) APP.notes = nts.data;
-  if(dm.data) APP.dailyMeds = dm.data;
-  if(om.data) APP.occMeds = om.data;
+  if(fam.data)A.family=fam.data;
+  A.members=mems.data||[];
+  A.events=evts.data||[];
+  A.noteGroups=ngrps.data||[];
+  A.notes=nts.data||[];
+  A.dailyMeds=dm.data||[];
+  A.occMeds=om.data||[];
 }
 
-async function initApp(user) {
-  APP.user = user;
+async function initApp(user){
+  A.user=user;
   document.getElementById('loading-screen').style.display='none';
-  await loadAllData();
-  if(!APP.family) {
-    // New user — create family
-    const {data:fam} = await sb.from('families').insert({
-      name: user.user_metadata?.name ? `${user.user_metadata.name}'s Family` : 'My Family',
-      owner_id: user.id
+  try{await loadAll();}catch(e){console.error('Load error',e);}
+  if(!A.family){
+    // New user - create family
+    const uname=user.user_metadata?.name||user.email.split('@')[0];
+    const{data:fam,error:fe}=await sb.from('families').insert({
+      name:`${uname}'s Family`,owner_id:user.id
     }).select().single();
-    APP.family = fam;
-    // Add self as member
-    if(fam) {
-      const {data:mem} = await sb.from('family_members').insert({
-        family_id: fam.id,
-        user_id: user.id,
-        name: user.user_metadata?.name || user.email.split('@')[0],
-        role: 'Parent',
-        email: user.email,
-        color: T.sage,
-        avatar: (user.user_metadata?.name||user.email)[0].toUpperCase(),
-        is_owner: true
+    if(fe){console.error('Family create error',fe);}
+    if(fam){
+      A.family=fam;
+      const{data:mem}=await sb.from('family_members').insert({
+        family_id:fam.id,user_id:user.id,name:uname,
+        role:'Parent',email:user.email,
+        color:T.sage,avatar:uname[0].toUpperCase(),is_owner:true
       }).select().single();
-      if(mem) APP.members = [mem];
+      if(mem)A.members=[mem];
     }
-    APP.showOnboarding = true;
+    A.showOB=true;
   }
   document.getElementById('root').style.display='flex';
   document.getElementById('auth-screen').style.display='none';
-  document.getElementById('family-name-badge').textContent = APP.family?.name||'';
+  document.getElementById('fam-badge').textContent=A.family?.name||'';
   goTo('calendar');
-  if(APP.showOnboarding) renderOnboarding();
+  if(A.showOB)renderOB();
 }
 
 // ── NAV ───────────────────────────────────────────────────────────────────────
-function goTo(page) {
+function goTo(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
-  document.querySelectorAll('.nav-btn').forEach(b=>{
-    b.classList.toggle('active', b.dataset.page===page);
-  });
-  APP.currentPage = page;
-  const renders = {calendar:renderCalendar,notebook:renderNotebook,meds:renderMeds,insights:renderInsights,settings:renderSettings};
-  renders[page]?.();
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
+  A.page=page;
+  ({calendar:renderCal,notebook:renderNB,meds:renderMeds,insights:renderInsights,settings:renderSettings}[page])?.();
 }
 
 // ── MODAL ─────────────────────────────────────────────────────────────────────
-function showModal(title, bodyHTML) {
-  document.getElementById('modal-root').innerHTML = `
-    <div class="modal-bg" id="modal-bg" onclick="if(event.target.id==='modal-bg')closeModal()">
+function showModal(title,body){
+  document.getElementById('modal-root').innerHTML=`
+    <div class="modal-bg" id="mbg" onclick="if(event.target.id==='mbg')closeModal()">
       <div class="modal-sheet">
         <div class="modal-head">
           <div class="modal-title">${title}</div>
           <button class="modal-close" onclick="closeModal()">×</button>
         </div>
-        <div class="modal-body">${bodyHTML}</div>
+        <div class="modal-body">${body}</div>
       </div>
     </div>`;
 }
 function closeModal(){document.getElementById('modal-root').innerHTML='';}
 
 // ── ONBOARDING ────────────────────────────────────────────────────────────────
-const OB = [
-  {icon:'👋',title:'Welcome to Kinship',body:"Your family's all-in-one hub. Let's take a quick tour!",nav:null},
-  {icon:'⚙️',title:'Start in Settings',body:'Set up your family name, add members, and invite them by email so everyone shares the same data.',nav:'settings'},
-  {icon:'🗓',title:'The Family Calendar',body:'Add social events, health appointments, wellness logs, and tasks. Filter by type or member.',nav:'calendar'},
-  {icon:'📓',title:'The Notebook',body:'Digital sticky notes. Organise info into groups — schedules, health notes, shopping, travel.',nav:'notebook'},
-  {icon:'💊',title:'Meds & Supplies',body:'Track medications. The app calculates run-out dates and helps you plan orders.',nav:'meds'},
-  {icon:'📊',title:'Insights',body:'See trends in your family\'s wellness and get a personalised weekly challenge.',nav:'insights'},
-  {icon:'🚀',title:"You're all set!",body:'Head to Settings to name your family and add members. Everything you add is saved in real-time.',nav:null,final:true},
+const OB=[
+  {icon:'👋',title:'Welcome to Kinship',body:"Your family's all-in-one hub — calendar, notes, meds tracking, and wellness insights. Let's take a quick tour!",nav:null},
+  {icon:'⚙️',title:'Start in Settings',body:'Set up your family name, add members with their colours, and invite them by email so everyone shares the same data.',nav:'settings'},
+  {icon:'🗓',title:'The Family Calendar',body:'Add social events, health appointments, wellness logs, and tasks. Filter by type or member. Everything in one view.',nav:'calendar'},
+  {icon:'📓',title:'The Notebook',body:'Digital sticky notes organised into groups. School schedules, health notes, shopping, travel plans — all in one place.',nav:'notebook'},
+  {icon:'💊',title:'Meds & Supplies',body:'Track daily and occasional medications. The app calculates run-out dates and helps you plan your next order.',nav:'meds'},
+  {icon:'📊',title:'Insights',body:'See trends in your family\'s wellness — sleep, hydration, exercise, mood — and get a personalised weekly challenge.',nav:'insights'},
+  {icon:'🚀',title:"You're all set!",body:'Head to Settings to name your family and add members. Everything you add is saved in real-time and shared with your family.',nav:'settings',final:true},
 ];
 
-function renderOnboarding() {
-  const step = APP.obStep;
-  const cur = OB[step];
-  document.getElementById('ob-root').innerHTML = `
+function renderOB(){
+  const s=A.obStep,cur=OB[s];
+  document.getElementById('ob-root').innerHTML=`
     <div class="ob-bg">
       <div class="ob-card">
-        <div class="ob-dots">${OB.map((_,i)=>`<div class="ob-dot ${i===step?'active':''}"></div>`).join('')}</div>
-        <div class="ob-icon">${cur.icon}</div>
-        <div class="ob-title">${cur.title}</div>
-        <div class="ob-body">${cur.body}</div>
-        ${cur.nav?`<div style="background:${T.sageLight};border-radius:9px;padding:7px 12px;margin-bottom:14px;font-size:12px;color:${T.sage};font-weight:600;text-align:center">Tap "${cur.title.replace('The','').trim()}" in the menu to explore ↓</div>`:''}
+        <div class="ob-dots">${OB.map((_,i)=>`<div class="ob-dot ${i===s?'active':''}"></div>`).join('')}</div>
+        <div style="font-size:48px;text-align:center;margin-bottom:12px">${cur.icon}</div>
+        <div style="font-family:'Playfair Display',serif;font-size:20px;color:${T.ink};text-align:center;margin-bottom:9px">${cur.title}</div>
+        <div style="font-size:13px;color:${T.muted};text-align:center;line-height:1.65;margin-bottom:16px">${cur.body}</div>
+        ${cur.nav?`<div style="background:${T.sageLight};border-radius:9px;padding:7px 12px;margin-bottom:14px;font-size:12px;color:${T.sage};font-weight:600;text-align:center">Tap "${cur.title.replace('The','').trim()}" in the menu below ↓</div>`:''}
         <div style="display:flex;gap:10px">
-          ${step>0?`<button class="btn btn-secondary" style="flex:1" onclick="APP.obStep--;renderOnboarding()">← Back</button>`:''}
+          ${s>0?`<button class="btn btn-secondary" style="flex:1" onclick="A.obStep--;renderOB()">← Back</button>`:''}
           ${cur.final
-            ? `<button class="btn btn-primary" style="flex:1" onclick="document.getElementById('ob-root').innerHTML='';APP.showOnboarding=false;goTo('settings')">Go to Settings 🚀</button>`
-            : `<button class="btn btn-primary" style="flex:1" onclick="${cur.nav?`goTo('${cur.nav}');`:''}APP.obStep++;renderOnboarding()">${step===0?"Let's go →":"Next →"}</button>`
+            ?`<button class="btn btn-primary" style="flex:1" onclick="document.getElementById('ob-root').innerHTML='';goTo('settings')">Go to Settings 🚀</button>`
+            :`<button class="btn btn-primary" style="flex:1" onclick="${cur.nav?`goTo('${cur.nav}');`:''}A.obStep++;renderOB()">${s===0?"Let's go →":"Next →"}</button>`
           }
         </div>
-        ${step>0?`<button onclick="document.getElementById('ob-root').innerHTML=''" style="display:block;margin:10px auto 0;background:none;border:none;color:${T.muted};font-size:12px;cursor:pointer">Skip tour</button>`:''}
+        ${s>0?`<button onclick="document.getElementById('ob-root').innerHTML=''" style="display:block;margin:10px auto 0;background:none;border:none;color:${T.muted};font-size:12px;cursor:pointer">Skip tour</button>`:''}
       </div>
     </div>`;
 }
 
 // ── CALENDAR ──────────────────────────────────────────────────────────────────
-function renderCalendar() {
-  const vY=APP.calDate.getFullYear(), vM=APP.calDate.getMonth();
+function renderCal(){
+  const vY=A.calDate.getFullYear(),vM=A.calDate.getMonth();
   const firstDay=new Date(vY,vM,1).getDay();
-  const daysInM=new Date(vY,vM+1,0).getDate();
-  const cells=Array.from({length:Math.ceil((firstDay+daysInM)/7)*7},(_,i)=>{const d=i-firstDay+1;return d>=1&&d<=daysInM?d:null;});
+  const dIM=new Date(vY,vM+1,0).getDate();
+  const cells=Array.from({length:Math.ceil((firstDay+dIM)/7)*7},(_,i)=>{const d=i-firstDay+1;return d>=1&&d<=dIM?d:null;});
 
-  const filtered = APP.events.filter(e=>{
-    if(APP.calFilterType!=='all'&&e.type!==APP.calFilterType) return false;
-    if(APP.calFilterMember!=='all'){
-      const inPart=(e.participants||[]).includes(APP.calFilterMember);
-      const isMem=e.member_id===APP.calFilterMember;
-      if(!inPart&&!isMem) return false;
-    }
-    if(APP.calSearch){
-      const q=APP.calSearch.toLowerCase();
-      const txt=[e.title,e.description,e.location,e.activity,...(e.tags||[])].filter(Boolean).join(' ').toLowerCase();
-      if(!txt.includes(q)) return false;
-    }
+  const filtered=A.events.filter(e=>{
+    if(A.calFType!=='all'&&e.type!==A.calFType)return false;
+    if(A.calFMember!=='all'&&!(e.participants||[]).includes(A.calFMember)&&e.member_id!==A.calFMember)return false;
+    if(A.calSearch){const q=A.calSearch.toLowerCase();if(![e.title,e.description,e.location,e.activity,...(e.tags||[])].filter(Boolean).join(' ').toLowerCase().includes(q))return false;}
     return true;
   });
 
   const evOnDay=d=>filtered.filter(e=>isSameDay(e.date,new Date(vY,vM,d)));
 
-  let calGrid='';
-  if(APP.calView==='month'){
-    calGrid=`<div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:3px">
+  let grid='';
+  if(A.calView==='month'){
+    grid=`<div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:3px">
       ${DN.map(d=>`<div style="text-align:center;font-size:10px;font-weight:700;color:${T.muted};padding:3px 0;text-transform:uppercase">${d}</div>`).join('')}
     </div>
     <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">
       ${cells.map(d=>{
         if(!d)return'<div></div>';
-        const isToday=isSameDay(new Date(vY,vM,d),todayD());
+        const isT=isSameDay(new Date(vY,vM,d),todayD());
         const de=evOnDay(d);
-        return`<div onclick="calDayClick(${d})" style="min-height:54px;padding:3px 2px;border-radius:9px;background:${isToday?T.sageLight:de.length?T.surface:T.parchment+'55'};border:1px solid ${isToday?T.sageMid:T.border};cursor:pointer">
-          <div style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${isToday?T.sage:'transparent'};color:${isToday?'#fff':T.ink};font-size:11px;font-weight:${isToday?800:600};margin:0 auto 2px">${d}</div>
+        return`<div onclick="calClick(${d})" style="min-height:54px;padding:3px 2px;border-radius:9px;background:${isT?T.sageLight:de.length?T.surface:T.parchment+'33'};border:1px solid ${isT?T.sageMid:T.border};cursor:pointer">
+          <div style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${isT?T.sage:'transparent'};color:${isT?'#fff':T.ink};font-size:11px;font-weight:${isT?800:600};margin:0 auto 2px">${d}</div>
           <div style="display:flex;flex-wrap:wrap;gap:2px;justify-content:center">
             ${de.slice(0,3).map(e=>`<div style="width:6px;height:6px;border-radius:50%;background:${ET[e.type].color}"></div>`).join('')}
             ${de.length>3?`<div style="font-size:8px;color:${T.muted};font-weight:700">+${de.length-3}</div>`:''}
@@ -502,291 +423,277 @@ function renderCalendar() {
         </div>`;
       }).join('')}
     </div>`;
-  } else if(APP.calView==='week'){
-    const ws=new Date(APP.calDate); ws.setDate(ws.getDate()-ws.getDay());
-    calGrid=Array.from({length:7},(_,i)=>{
-      const d=new Date(ws); d.setDate(d.getDate()+i);
+  } else if(A.calView==='week'){
+    const ws=new Date(A.calDate);ws.setDate(ws.getDate()-ws.getDay());
+    grid=Array.from({length:7},(_,i)=>{
+      const d=new Date(ws);d.setDate(d.getDate()+i);
       const de=filtered.filter(e=>isSameDay(e.date,d));
-      const isToday=isSameDay(d,todayD());
+      const isT=isSameDay(d,todayD());
       return`<div style="display:flex;gap:10px;margin-bottom:8px">
-        <div style="width:38px;height:38px;border-radius:50%;background:${isToday?T.sage:T.parchment};display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid ${isToday?T.sageMid:T.border};flex-shrink:0">
-          <div style="font-size:9px;font-weight:700;color:${isToday?'#fff':T.muted};text-transform:uppercase">${DN[d.getDay()]}</div>
-          <div style="font-size:13px;font-weight:800;color:${isToday?'#fff':T.ink};line-height:1">${d.getDate()}</div>
+        <div style="width:38px;height:38px;border-radius:50%;background:${isT?T.sage:T.parchment};display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid ${isT?T.sageMid:T.border};flex-shrink:0">
+          <div style="font-size:9px;font-weight:700;color:${isT?'#fff':T.muted};text-transform:uppercase">${DN[d.getDay()]}</div>
+          <div style="font-size:13px;font-weight:800;color:${isT?'#fff':T.ink};line-height:1">${d.getDate()}</div>
         </div>
         <div style="flex:1;padding-top:2px">
-          ${de.length?de.map(e=>`<div onclick="viewEvent('${e.id}')" style="display:flex;align-items:center;gap:7px;padding:5px 10px;border-radius:8px;background:${ET[e.type].bg};margin-bottom:4px;cursor:pointer">
-            <span style="font-size:13px">${ET[e.type].icon}</span>
-            <span style="font-size:12px;font-weight:600;color:${T.ink}">${e.title||ET[e.type].label}</span>
+          ${de.length?de.map(e=>`<div onclick="viewEv('${e.id}')" style="display:flex;align-items:center;gap:7px;padding:5px 10px;border-radius:8px;background:${ET[e.type].bg};margin-bottom:4px;cursor:pointer">
+            <span>${ET[e.type].icon}</span><span style="font-size:12px;font-weight:600;color:${T.ink}">${e.title||ET[e.type].label}</span>
           </div>`).join(''):`<div style="font-size:12px;color:${T.muted};font-style:italic;padding-top:10px">No entries</div>`}
         </div>
       </div>`;
     }).join('');
   } else {
-    calGrid=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">${MN.map((mn,mi)=>{
-      const cnt=filtered.filter(e=>new Date(e.date).getMonth()===mi&&new Date(e.date).getFullYear()===vY).length;
-      return`<div onclick="APP.calDate=new Date(${vY},${mi},1);APP.calView='month';renderCalendar()" style="background:${cnt>0?T.surface:T.parchment+'44'};border-radius:11px;padding:10px 6px;border:1px solid ${T.border};cursor:pointer;text-align:center">
-        <div style="font-weight:700;color:${T.ink};font-size:13px">${mn.slice(0,3)}</div>
-        ${cnt>0?`<div style="font-size:11px;color:${T.sage};font-weight:700;margin-top:2px">${cnt}</div>`:''}
-      </div>`;
-    }).join('')}</div>`;
+    // Year view with mini month grids
+    grid=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      ${MN.map((mn,mi)=>{
+        const mFirstDay=new Date(vY,mi,1).getDay();
+        const mDIM=new Date(vY,mi+1,0).getDate();
+        const mCells=Array.from({length:Math.ceil((mFirstDay+mDIM)/7)*7},(_,i)=>{const d=i-mFirstDay+1;return d>=1&&d<=mDIM?d:null;});
+        const mEvs=filtered.filter(e=>new Date(e.date).getMonth()===mi&&new Date(e.date).getFullYear()===vY);
+        const mEvDays=new Set(mEvs.map(e=>new Date(e.date).getDate()));
+        return`<div onclick="A.calDate=new Date(${vY},${mi},1);A.calView='month';renderCal()" style="background:${T.surface};border-radius:12px;border:1px solid ${T.border};padding:10px;cursor:pointer">
+          <div style="font-weight:700;font-size:13px;color:${T.ink};margin-bottom:6px;text-align:center">${mn.slice(0,3)} ${mEvs.length>0?`<span style="font-size:10px;color:${T.sage};font-weight:700">(${mEvs.length})</span>`:''}</div>
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px">
+            ${['S','M','T','W','T','F','S'].map(d=>`<div style="text-align:center;font-size:8px;font-weight:700;color:${T.muted}">${d}</div>`).join('')}
+            ${mCells.map(d=>{
+              if(!d)return'<div></div>';
+              const isT=isSameDay(new Date(vY,mi,d),todayD());
+              const hasEv=mEvDays.has(d);
+              return`<div style="width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${isT?T.sage:hasEv?T.sageLight:'transparent'};font-size:8px;font-weight:${hasEv?700:400};color:${isT?'#fff':hasEv?T.sage:T.muted}">${d}</div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
   }
+
+  const searchRes=A.calSearch&&filtered.length>0?`<div style="padding:0 16px">
+    <div style="font-size:11px;font-weight:700;color:${T.muted};margin-bottom:8px;text-transform:uppercase">${filtered.length} result${filtered.length!==1?'s':''}</div>
+    ${filtered.map(e=>`<div onclick="viewEv('${e.id}')" class="card" style="padding:10px 13px;margin-bottom:7px;cursor:pointer;display:flex;align-items:center;gap:10px">
+      <span style="font-size:17px">${ET[e.type].icon}</span>
+      <div><div style="font-weight:700;font-size:13px">${e.title||ET[e.type].label}</div><div style="font-size:11px;color:${T.muted}">${fmt(e.date)}</div></div>
+    </div>`).join('')}
+  </div>`:'';
 
   document.getElementById('page-calendar').innerHTML=`
     <div class="page-header">
-      <div class="family-label">${APP.family?.name||''}</div>
-      <div class="page-title">Calendar
-        <button class="btn btn-primary btn-sm" onclick="showEntryPicker(null)">+ Add</button>
-      </div>
+      <div class="family-label">${A.family?.name||''}</div>
+      <div class="page-title">Calendar <button class="btn btn-primary btn-sm" onclick="showPicker(null)">+ Add</button></div>
     </div>
     <div style="padding:8px 16px 0;display:flex;gap:5px;flex-wrap:wrap">
-      ${['month','week','year'].map(v=>`<button onclick="APP.calView='${v}';renderCalendar()" style="padding:4px 12px;border-radius:99px;border:1.5px solid ${APP.calView===v?T.sage:T.border};background:${APP.calView===v?T.sage:'#fff'};color:${APP.calView===v?'#fff':T.muted};font-weight:700;font-size:12px;cursor:pointer;text-transform:capitalize">${v}</button>`).join('')}
-      <button onclick="APP.calDate=new Date();renderCalendar()" style="padding:4px 12px;border-radius:99px;border:1.5px solid ${T.border};background:#fff;color:${T.muted};font-weight:700;font-size:12px;cursor:pointer;margin-left:auto">Today</button>
+      ${['month','week','year'].map(v=>`<button onclick="A.calView='${v}';renderCal()" style="padding:4px 12px;border-radius:99px;border:1.5px solid ${A.calView===v?T.sage:T.border};background:${A.calView===v?T.sage:'#fff'};color:${A.calView===v?'#fff':T.muted};font-weight:700;font-size:12px;cursor:pointer;text-transform:capitalize">${v}</button>`).join('')}
+      <button onclick="A.calDate=new Date();renderCal()" style="padding:4px 12px;border-radius:99px;border:1.5px solid ${T.border};background:#fff;color:${T.muted};font-weight:700;font-size:12px;cursor:pointer;margin-left:auto">Today</button>
     </div>
     <div style="padding:7px 16px 0;display:flex;gap:6px;overflow-x:auto">
-      <select class="sel" style="width:auto;font-size:12px;padding:5px 8px;border-radius:20px;flex-shrink:0" onchange="APP.calFilterType=this.value;renderCalendar()">
+      <select class="sel" style="width:auto;font-size:12px;padding:5px 8px;border-radius:20px;flex-shrink:0" onchange="A.calFType=this.value;renderCal()">
         <option value="all">All types</option>
-        ${Object.entries(ET).map(([k,v])=>`<option value="${k}"${APP.calFilterType===k?' selected':''}>${v.icon} ${v.label}</option>`).join('')}
+        ${Object.entries(ET).map(([k,v])=>`<option value="${k}"${A.calFType===k?' selected':''}>${v.icon} ${v.label}</option>`).join('')}
       </select>
-      <select class="sel" style="width:auto;font-size:12px;padding:5px 8px;border-radius:20px;flex-shrink:0" onchange="APP.calFilterMember=this.value;renderCalendar()">
+      <select class="sel" style="width:auto;font-size:12px;padding:5px 8px;border-radius:20px;flex-shrink:0" onchange="A.calFMember=this.value;renderCal()">
         <option value="all">All members</option>
-        ${APP.members.map(m=>`<option value="${m.id}"${APP.calFilterMember===m.id?' selected':''}>${m.name}</option>`).join('')}
+        ${A.members.map(m=>`<option value="${m.id}"${A.calFMember===m.id?' selected':''}>${m.name}</option>`).join('')}
       </select>
     </div>
     <div style="padding:6px 16px 0">
-      <input class="inp" placeholder="🔍  Search entries…" value="${APP.calSearch}" oninput="APP.calSearch=this.value;renderCalendar()">
+      <input class="inp" placeholder="🔍  Search entries…" value="${A.calSearch}" oninput="A.calSearch=this.value;renderCal()">
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 0">
-      <button onclick="APP.calDate=new Date(${vY},${vM-1},1);renderCalendar()" style="background:${T.parchment};border:1px solid ${T.border};border-radius:9px;width:33px;height:33px;font-size:18px;cursor:pointer">‹</button>
-      <button onclick="showMonthPicker()" style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:${T.ink};background:none;border:none;cursor:pointer">${MN[vM]} ${vY}</button>
-      <button onclick="APP.calDate=new Date(${vY},${vM+1},1);renderCalendar()" style="background:${T.parchment};border:1px solid ${T.border};border-radius:9px;width:33px;height:33px;font-size:18px;cursor:pointer">›</button>
+      <button onclick="A.calDate=new Date(${vY},${vM-1},1);renderCal()" style="background:${T.parchment};border:1px solid ${T.border};border-radius:9px;width:33px;height:33px;font-size:18px;cursor:pointer">‹</button>
+      <button onclick="showMPicker()" style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:${T.ink};background:none;border:none;cursor:pointer">${MN[vM]} ${vY}</button>
+      <button onclick="A.calDate=new Date(${vY},${vM+1},1);renderCal()" style="background:${T.parchment};border:1px solid ${T.border};border-radius:9px;width:33px;height:33px;font-size:18px;cursor:pointer">›</button>
     </div>
-    <div style="padding:8px 16px">${calGrid}</div>
-    ${APP.calSearch&&filtered.length>0?`<div style="padding:0 16px">
-      <div style="font-size:11px;font-weight:700;color:${T.muted};margin-bottom:8px;text-transform:uppercase">${filtered.length} results</div>
-      ${filtered.map(e=>`<div onclick="viewEvent('${e.id}')" class="card" style="padding:10px 13px;margin-bottom:7px;cursor:pointer;display:flex;align-items:center;gap:10px">
-        <span style="font-size:17px">${ET[e.type].icon}</span>
-        <div><div style="font-weight:700;font-size:13px">${e.title||ET[e.type].label}</div><div style="font-size:11px;color:${T.muted}">${fmt(e.date)}</div></div>
-      </div>`).join('')}
-    </div>`:''}
+    <div style="padding:8px 16px">${grid}</div>
+    ${searchRes}
   `;
 }
+window.renderCal=renderCal;
 
-function calDayClick(d) {
-  const vY=APP.calDate.getFullYear(),vM=APP.calDate.getMonth();
+function calClick(d){
+  const vY=A.calDate.getFullYear(),vM=A.calDate.getMonth();
   const dt=new Date(vY,vM,d);
-  const de=APP.events.filter(e=>isSameDay(e.date,dt));
-  if(de.length) showDayModal(dt,de);
-  else showEntryPicker(dt);
+  const de=A.events.filter(e=>isSameDay(e.date,dt));
+  if(de.length)showDayModal(dt,de);
+  else showPicker(dt);
 }
-window.calDayClick=calDayClick;
+window.calClick=calClick;
 
-function showDayModal(dt,de) {
-  showModal(`${DN[dt.getDay()]}, ${fmt(dt)}`,
-    `${de.map(e=>`<div onclick="closeModal();setTimeout(()=>viewEvent('${e.id}'),50)" style="display:flex;align-items:center;gap:12px;padding:12px 13px;border-radius:11px;background:${ET[e.type].bg};margin-bottom:8px;cursor:pointer">
-      <span style="font-size:19px">${ET[e.type].icon}</span>
+function showDayModal(dt,de){
+  showModal(`${DNF[dt.getDay()]}, ${fmt(dt)}`,
+    `${de.map(e=>`<div onclick="closeModal();setTimeout(()=>viewEv('${e.id}'),50)" style="display:flex;align-items:center;gap:12px;padding:12px 13px;border-radius:11px;background:${ET[e.type].bg};margin-bottom:8px;cursor:pointer">
+      <span style="font-size:18px">${ET[e.type].icon}</span>
       <div><div style="font-weight:700">${e.title||ET[e.type].label}</div>${e.location?`<div style="font-size:12px;color:${T.muted}">📍 ${e.location}</div>`:''}</div>
     </div>`).join('')}
-    <button class="btn btn-primary btn-full" style="margin-top:4px" onclick="closeModal();showEntryPicker(new Date(${dt.getTime()}))">+ Add to this day</button>`
+    <button class="btn btn-primary btn-full" style="margin-top:4px" onclick="closeModal();showPicker(new Date(${dt.getTime()}))">+ Add to this day</button>`
   );
 }
 
-function showMonthPicker(){
-  const vY=APP.calDate.getFullYear(),vM=APP.calDate.getMonth();
-  let jY=vY;
-  const body=`<div style="display:flex;gap:10px;align-items:center;margin-bottom:14px">
-    <button class="btn btn-secondary btn-sm" onclick="document.getElementById('jy').textContent=parseInt(document.getElementById('jy').textContent)-1">‹</button>
-    <div id="jy" style="flex:1;text-align:center;font-weight:800;font-size:18px">${vY}</div>
-    <button class="btn btn-secondary btn-sm" onclick="document.getElementById('jy').textContent=parseInt(document.getElementById('jy').textContent)+1">›</button>
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-    ${MN.map((mn,i)=>`<button onclick="APP.calDate=new Date(parseInt(document.getElementById('jy').textContent),${i},1);closeModal();renderCalendar()" style="padding:10px;border-radius:10px;border:1.5px solid ${i===vM?T.sage:T.border};background:${i===vM?T.sageLight:'#fff'};font-weight:700;font-size:13px;cursor:pointer">${mn.slice(0,3)}</button>`).join('')}
-  </div>`;
-  showModal('Jump to Month',body);
+function showMPicker(){
+  const vY=A.calDate.getFullYear(),vM=A.calDate.getMonth();
+  showModal('Jump to Month',`
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px">
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('jy').textContent=parseInt(document.getElementById('jy').textContent)-1">‹</button>
+      <div id="jy" style="flex:1;text-align:center;font-weight:800;font-size:18px">${vY}</div>
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('jy').textContent=parseInt(document.getElementById('jy').textContent)+1">›</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      ${MN.map((mn,i)=>`<button onclick="A.calDate=new Date(parseInt(document.getElementById('jy').textContent),${i},1);closeModal();renderCal()" style="padding:10px;border-radius:10px;border:1.5px solid ${i===vM?T.sage:T.border};background:${i===vM?T.sageLight:'#fff'};font-weight:700;font-size:13px;cursor:pointer;color:${T.ink}">${mn.slice(0,3)}</button>`).join('')}
+    </div>`);
 }
-window.showMonthPicker=showMonthPicker;
+window.showMPicker=showMPicker;
 
-function showEntryPicker(dt) {
+function showPicker(dt){
   showModal('New Entry',`
     <p style="color:${T.muted};font-size:13px;margin-bottom:14px">What kind of entry?</p>
     ${Object.entries(ET).map(([type,cfg])=>`
-      <button onclick="closeModal();openEventForm('${type}',null,${dt?dt.getTime():'null'})" style="display:flex;align-items:center;gap:13px;padding:13px 15px;border-radius:13px;border:1.5px solid ${cfg.bg};background:${cfg.bg}88;cursor:pointer;text-align:left;width:100%;margin-bottom:8px">
+      <button onclick="closeModal();openEvForm('${type}',null,${dt?dt.getTime():'null'})" style="display:flex;align-items:center;gap:13px;padding:13px 15px;border-radius:13px;border:1.5px solid ${cfg.bg};background:${cfg.bg}88;cursor:pointer;text-align:left;width:100%;margin-bottom:8px">
         <span style="font-size:24px">${cfg.icon}</span>
         <div><div style="font-weight:700;font-size:14px">${cfg.label}</div><div style="font-size:12px;color:${T.muted};margin-top:2px">${cfg.desc}</div></div>
-      </button>`).join('')}
-  `);
+      </button>`).join('')}`);
 }
-window.showEntryPicker=showEntryPicker;
+window.showPicker=showPicker;
 
-function openEventForm(type, evId, dateTs) {
-  const ev = evId ? APP.events.find(e=>e.id===evId) : null;
-  const cfg = ET[type];
-  const initialDate = dateTs ? toISO(new Date(dateTs)) : toISO(todayD());
-  const members = APP.members;
-  const tags = APP.family?.tags||[];
-
-  let fields = '';
+function openEvForm(type,evId,dateTs){
+  const ev=evId?A.events.find(e=>e.id===evId):null;
+  const cfg=ET[type];
+  const iDate=dateTs?toISO(new Date(dateTs)):toISO(todayD());
+  let fields='';
   if(type==='wellness'){
     fields=`
       <div class="form-row"><label class="lbl">Family Member</label>
-        <select class="sel" id="ef-member"><option value="">Select…</option>${members.map(m=>`<option value="${m.id}"${ev?.member_id===m.id?' selected':''}>${m.name}</option>`).join('')}</select></div>
-      <div class="form-row"><label class="lbl">Date</label><input class="inp" type="date" id="ef-date" value="${ev?toISO(ev.date):initialDate}"></div>
-      <div class="grid2" style="margin-bottom:12px">
-        <div class="form-row" style="margin:0"><label class="lbl">Weight (kg)</label><input class="inp" type="number" id="ef-weight" value="${ev?.weight||''}" placeholder="62.5"></div>
-        <div class="form-row" style="margin:0"><label class="lbl">Height (cm)</label><input class="inp" type="number" id="ef-height" value="${ev?.height||''}" placeholder="168"></div>
+        <select class="sel" id="ef-mem"><option value="">Select…</option>${A.members.map(m=>`<option value="${m.id}"${ev?.member_id===m.id?' selected':''}>${m.name}</option>`).join('')}</select></div>
+      <div class="form-row"><label class="lbl">Date</label><input class="inp" type="date" id="ef-date" value="${ev?toISO(ev.date):iDate}"></div>
+      <div class="grid2">
+        <div class="form-row" style="margin:0"><label class="lbl">Weight (kg)</label><input class="inp" type="number" id="ef-wt" placeholder="62.5" value="${ev?.weight||''}"></div>
+        <div class="form-row" style="margin:0"><label class="lbl">Height (cm)</label><input class="inp" type="number" id="ef-ht" placeholder="168" value="${ev?.height||''}"></div>
       </div>
-      <div class="form-row"><label class="lbl">Hydration (ml)</label><input class="inp" type="number" id="ef-hydration" value="${ev?.hydration||''}" placeholder="2000"></div>
-      <div class="form-row" style="flex-direction:row;align-items:center;gap:8px">
-        <input type="checkbox" id="ef-exercised" ${ev?.exercised?'checked':''} onchange="document.getElementById('ef-activity-row').style.display=this.checked?'grid':'none'">
-        <label for="ef-exercised" style="font-size:14px;font-weight:600">Exercised today</label>
-      </div>
-      <div id="ef-activity-row" class="grid2" style="margin-bottom:12px;display:${ev?.exercised?'grid':'none'}">
-        <div class="form-row" style="margin:0"><label class="lbl">Activity</label><input class="inp" id="ef-activity" value="${ev?.activity||''}" placeholder="Yoga, Running…"></div>
-        <div class="form-row" style="margin:0"><label class="lbl">Mins</label><input class="inp" type="number" id="ef-activity-mins" value="${ev?.activity_mins||''}"></div>
+      <div class="form-row"><label class="lbl">Hydration (ml)</label><input class="inp" type="number" id="ef-hyd" placeholder="2000" value="${ev?.hydration||''}"></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;margin-bottom:12px;cursor:pointer">
+        <input type="checkbox" id="ef-ex" ${ev?.exercised?'checked':''} onchange="document.getElementById('ef-exrow').style.display=this.checked?'grid':'none'"> Exercised today
+      </label>
+      <div id="ef-exrow" class="grid2" style="display:${ev?.exercised?'grid':'none'}">
+        <div class="form-row" style="margin:0"><label class="lbl">Activity</label><input class="inp" id="ef-act" value="${ev?.activity||''}" placeholder="Yoga, Running…"></div>
+        <div class="form-row" style="margin:0"><label class="lbl">Mins</label><input class="inp" type="number" id="ef-actm" value="${ev?.activity_mins||''}"></div>
       </div>
       <div class="form-row"><label class="lbl">Mood</label>
         <select class="sel" id="ef-mood">${MOODS.map(m=>`<option${ev?.mood===m?' selected':''}>${m}</option>`).join('')}</select></div>
-      <div class="grid2" style="margin-bottom:12px">
-        <div class="form-row" style="margin:0"><label class="lbl">Energy (%)</label><input class="inp" type="number" min="0" max="100" id="ef-energy" value="${ev?.energy||''}" placeholder="75"></div>
-        <div class="form-row" style="margin:0"><label class="lbl">Sleep (hrs)</label><input class="inp" type="number" step="0.5" id="ef-sleep" value="${ev?.sleep||''}" placeholder="7.5"></div>
+      <div class="grid2">
+        <div class="form-row" style="margin:0"><label class="lbl">Energy (%)</label><input class="inp" type="number" min="0" max="100" id="ef-en" placeholder="75" value="${ev?.energy||''}"></div>
+        <div class="form-row" style="margin:0"><label class="lbl">Sleep (hrs)</label><input class="inp" type="number" step="0.5" id="ef-sl" placeholder="7.5" value="${ev?.sleep||''}"></div>
       </div>`;
   } else {
     fields=`
       ${type==='health'?`<div class="form-row"><label class="lbl">Type</label>
-        <select class="sel" id="ef-appttype">
-          ${['Appointment','Treatment','Illness','Check-up','Emergency','Other'].map(t=>`<option${ev?.appt_type===t?' selected':''}>${t}</option>`).join('')}
-        </select></div>`:''}
+        <select class="sel" id="ef-apt">${['Appointment','Treatment','Illness','Check-up','Emergency','Other'].map(t=>`<option${ev?.appt_type===t?' selected':''}>${t}</option>`).join('')}</select></div>`:''}
       <div class="form-row"><label class="lbl">Title</label><input class="inp" id="ef-title" value="${ev?.title||''}" placeholder="Add a title…"></div>
-      ${type!=='task'?`<div class="form-row"><label class="lbl">Location</label><input class="inp" id="ef-location" value="${ev?.location||''}" placeholder="Where?"></div>`:''}
-      <div class="grid2" style="margin-bottom:12px">
-        <div class="form-row" style="margin:0"><label class="lbl">${type==='task'?'Due Date':'Start'}</label><input class="inp" type="${type==='task'?'date':'datetime-local'}" id="ef-date" value="${ev?toISO(ev.date):initialDate}"></div>
-        ${type!=='task'?`<div class="form-row" style="margin:0"><label class="lbl">End</label><input class="inp" type="datetime-local" id="ef-enddate" value="${ev?.end_date?toISO(ev.end_date):''}"></div>`:''}
+      ${type!=='task'?`<div class="form-row"><label class="lbl">Location</label><input class="inp" id="ef-loc" value="${ev?.location||''}" placeholder="Where?"></div>`:''}
+      <div class="grid2">
+        <div class="form-row" style="margin:0"><label class="lbl">${type==='task'?'Due Date':'Start'}</label><input class="inp" type="${type==='task'?'date':'datetime-local'}" id="ef-date" value="${ev?toISO(ev.date):iDate}"></div>
+        ${type!=='task'?`<div class="form-row" style="margin:0"><label class="lbl">End</label><input class="inp" type="datetime-local" id="ef-end" value="${ev?.end_date?toISO(ev.end_date):''}"></div>`:''}
       </div>
       ${type==='task'?`<div class="form-row"><label class="lbl">Assign To</label>
-        <select class="sel" id="ef-member"><option value="">Anyone</option>${members.map(m=>`<option value="${m.id}"${ev?.member_id===m.id?' selected':''}>${m.name}</option>`).join('')}</select></div>`:
-        `<div class="form-row"><label class="lbl">Participants</label>
-          <div style="display:flex;gap:7px;flex-wrap:wrap" id="ef-participants">
-            ${members.map(m=>{const sel=(ev?.participants||[]).includes(m.id);return`<button type="button" onclick="toggleParticipant('${m.id}',this)" data-selected="${sel}" style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;border:1.5px solid ${sel?m.color:T.border};background:${sel?m.color+'22':'#fff'};cursor:pointer;font-size:12px;font-weight:600;color:${sel?m.color:T.muted}">${av(m,18)} ${m.name}</button>`;}).join('')}
+        <select class="sel" id="ef-mem"><option value="">Anyone</option>${A.members.map(m=>`<option value="${m.id}"${ev?.member_id===m.id?' selected':''}>${m.name}</option>`).join('')}</select></div>`
+        :`<div class="form-row"><label class="lbl">Participants</label>
+          <div style="display:flex;gap:7px;flex-wrap:wrap" id="ef-parts">
+            ${A.members.map(m=>{const sel=(ev?.participants||[]).includes(m.id);return`<button type="button" data-mid="${m.id}" data-sel="${sel}" onclick="togPart(this,'${m.id}')" style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;border:1.5px solid ${sel?m.color:T.border};background:${sel?m.color+'22':'#fff'};cursor:pointer;font-size:12px;font-weight:600;color:${sel?m.color:T.muted}">${av(m,18)} ${m.name}</button>`;}).join('')}
           </div></div>`}
       ${type!=='task'?`<div class="form-row"><label class="lbl">Recurrence</label>
-        <select class="sel" id="ef-recurrence">
-          ${['None','Daily','Weekly','Bi-weekly','Monthly','Yearly'].map(r=>`<option${ev?.recurrence===r?' selected':''}>${r}</option>`).join('')}
-        </select></div>`:''}
+        <select class="sel" id="ef-rec">${['None','Daily','Weekly','Bi-weekly','Monthly','Yearly'].map(r=>`<option${ev?.recurrence===r?' selected':''}>${r}</option>`).join('')}</select></div>`:''}
       <div class="form-row"><label class="lbl">Tags</label>
         <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px" id="ef-tags">
-          ${tags.map(t=>{const sel=(ev?.tags||[]).includes(t);return`<button type="button" onclick="toggleTag('${t}',this)" data-selected="${sel}" style="padding:3px 9px;border-radius:99px;border:1.5px solid ${sel?T.sage:T.border};background:${sel?T.sageLight:'#fff'};color:${sel?T.sage:T.muted};font-size:12px;font-weight:600;cursor:pointer">${t}</button>`;}).join('')}
+          ${(A.family?.tags||[]).map(t=>{const sel=(ev?.tags||[]).includes(t);return`<button type="button" data-tag="${t}" data-sel="${sel}" onclick="togTag(this)" style="padding:3px 9px;border-radius:99px;border:1.5px solid ${sel?T.sage:T.border};background:${sel?T.sageLight:'#fff'};color:${sel?T.sage:T.muted};font-size:12px;font-weight:600;cursor:pointer">${t}</button>`;}).join('')}
         </div>
-        <div style="display:flex;gap:7px"><input class="inp" id="ef-newtag" placeholder="Custom tag…" style="flex:1" onkeydown="if(event.key==='Enter'){addCustomTag();event.preventDefault()}"><button class="btn btn-secondary btn-sm" onclick="addCustomTag()">Add</button></div>
+        <div style="display:flex;gap:7px"><input class="inp" id="ef-ntag" placeholder="Custom tag…" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addTag();}"><button class="btn btn-secondary btn-sm" onclick="addTag()">Add</button></div>
       </div>
-      <div class="form-row"><label class="lbl">Description</label><textarea class="inp" id="ef-description" rows="3" placeholder="Any notes…" style="resize:none">${ev?.description||''}</textarea></div>`;
+      <div class="form-row"><label class="lbl">Description</label><textarea class="inp" id="ef-desc" rows="3" placeholder="Any notes…" style="resize:none">${ev?.description||''}</textarea></div>`;
   }
-
   showModal(`${ev?'Edit':'New'} ${cfg.label}`,`
-    <div style="display:flex;flex-direction:column;gap:0">
+    <div style="display:flex;flex-direction:column">
       ${fields}
-      <button class="btn btn-primary btn-full btn-lg" style="margin-top:8px" onclick="saveEvent('${type}','${evId||''}',${dateTs||'null'})">
+      <button class="btn btn-primary btn-full btn-lg" style="margin-top:8px" onclick="saveEv('${type}','${evId||''}',${dateTs||'null'})">
         ${ev?'Save Changes':'Add Entry'}
       </button>
-    </div>
-  `);
+    </div>`);
 }
-window.openEventForm=openEventForm;
+window.openEvForm=openEvForm;
 
-function toggleParticipant(id, btn) {
-  const sel = btn.dataset.selected==='true';
-  btn.dataset.selected = !sel;
-  const m = getMember(id);
-  btn.style.border = `1.5px solid ${!sel?m.color:T.border}`;
-  btn.style.background = !sel?m.color+'22':'#fff';
-  btn.style.color = !sel?m.color:T.muted;
+function togPart(btn,id){
+  const sel=btn.dataset.sel==='true';
+  btn.dataset.sel=!sel;
+  const m=getMem(id);
+  btn.style.border=`1.5px solid ${!sel?m.color:T.border}`;
+  btn.style.background=!sel?m.color+'22':'#fff';
+  btn.style.color=!sel?m.color:T.muted;
 }
-window.toggleParticipant=toggleParticipant;
+window.togPart=togPart;
 
-function toggleTag(tag, btn) {
-  const sel = btn.dataset.selected==='true';
-  btn.dataset.selected = !sel;
-  btn.style.border = `1.5px solid ${!sel?T.sage:T.border}`;
-  btn.style.background = !sel?T.sageLight:'#fff';
-  btn.style.color = !sel?T.sage:T.muted;
+function togTag(btn){
+  const sel=btn.dataset.sel==='true';
+  btn.dataset.sel=!sel;
+  btn.style.border=`1.5px solid ${!sel?T.sage:T.border}`;
+  btn.style.background=!sel?T.sageLight:'#fff';
+  btn.style.color=!sel?T.sage:T.muted;
 }
-window.toggleTag=toggleTag;
+window.togTag=togTag;
 
-function addCustomTag() {
-  const inp = document.getElementById('ef-newtag');
-  const val = inp.value.trim();
-  if(!val) return;
-  const cont = document.getElementById('ef-tags');
-  const btn = document.createElement('button');
-  btn.type='button'; btn.dataset.selected='true'; btn.dataset.custom=val;
+function addTag(){
+  const inp=document.getElementById('ef-ntag');
+  const val=inp?.value?.trim();
+  if(!val)return;
+  const cont=document.getElementById('ef-tags');
+  const btn=document.createElement('button');
+  btn.type='button';btn.dataset.sel='true';btn.dataset.tag=val;
   btn.style.cssText=`padding:3px 9px;border-radius:99px;border:1.5px solid ${T.sage};background:${T.sageLight};color:${T.sage};font-size:12px;font-weight:600;cursor:pointer`;
-  btn.textContent=val;
-  btn.onclick=()=>toggleTag(val,btn);
-  cont.appendChild(btn);
-  inp.value='';
+  btn.textContent=val;btn.onclick=()=>togTag(btn);
+  cont.appendChild(btn);inp.value='';
 }
-window.addCustomTag=addCustomTag;
+window.addTag=addTag;
 
-async function saveEvent(type, evId, dateTs) {
-  const fam = APP.family;
-  if(!fam){showToast('Please set up your family first.',true);return;}
-
-  let data = { family_id: fam.id, type };
-
-  if(type==='wellness'){
-    data.member_id = document.getElementById('ef-member')?.value||null;
-    data.date = new Date(document.getElementById('ef-date').value).toISOString();
-    data.title = getMember(data.member_id)?.name ? `${getMember(data.member_id).name} – Wellness Log` : 'Wellness Log';
-    data.weight = parseFloat(document.getElementById('ef-weight')?.value)||null;
-    data.height = parseFloat(document.getElementById('ef-height')?.value)||null;
-    data.hydration = parseInt(document.getElementById('ef-hydration')?.value)||null;
-    data.exercised = document.getElementById('ef-exercised')?.checked||false;
-    data.activity = document.getElementById('ef-activity')?.value||null;
-    data.activity_mins = parseInt(document.getElementById('ef-activity-mins')?.value)||null;
-    data.mood = document.getElementById('ef-mood')?.value||null;
-    data.energy = parseInt(document.getElementById('ef-energy')?.value)||null;
-    data.sleep = parseFloat(document.getElementById('ef-sleep')?.value)||null;
-  } else {
-    data.title = document.getElementById('ef-title')?.value||'';
-    if(!data.title){showToast('Please add a title.',true);return;}
-    data.date = new Date(document.getElementById('ef-date')?.value||toISO(todayD())).toISOString();
-    data.end_date = document.getElementById('ef-enddate')?.value ? new Date(document.getElementById('ef-enddate').value).toISOString() : null;
-    data.location = document.getElementById('ef-location')?.value||null;
-    data.description = document.getElementById('ef-description')?.value||null;
-    data.appt_type = document.getElementById('ef-appttype')?.value||null;
-    data.recurrence = document.getElementById('ef-recurrence')?.value||'None';
-    data.member_id = document.getElementById('ef-member')?.value||null;
-    // Participants
-    const partBtns = document.querySelectorAll('#ef-participants button[data-selected="true"]');
-    data.participants = Array.from(partBtns).map(b=>b.getAttribute('onclick')?.match(/'([^']+)'/)?.[1]).filter(Boolean);
-    // Fix: get participant ids from onclick
-    data.participants = Array.from(document.querySelectorAll('#ef-participants button')).filter(b=>b.dataset.selected==='true').map(b=>{
-      const m=APP.members.find(m=>b.textContent.includes(m.name));return m?.id;
-    }).filter(Boolean);
-    // Tags
-    data.tags = Array.from(document.querySelectorAll('#ef-tags button[data-selected="true"]')).map(b=>b.dataset.custom||b.textContent);
-  }
-
-  let result;
-  if(evId) {
-    result = await sb.from('events').update(data).eq('id',evId).select().single();
-  } else {
-    result = await sb.from('events').insert(data).select().single();
-  }
-  if(result.error){showToast('Error saving. Please try again.',true);console.error(result.error);return;}
-
-  if(evId) APP.events = APP.events.map(e=>e.id===evId?result.data:e);
-  else APP.events.push(result.data);
-
-  closeModal();
-  showToast(evId?'Entry updated!':'Entry added!');
-  renderCalendar();
+async function saveEv(type,evId,dateTs){
+  if(!A.family){toast('Set up your family first.',true);return;}
+  let data={family_id:A.family.id,type};
+  try{
+    if(type==='wellness'){
+      data.member_id=document.getElementById('ef-mem')?.value||null;
+      data.date=new Date(document.getElementById('ef-date').value).toISOString();
+      const mem=getMem(data.member_id);
+      data.title=mem?`${mem.name} – Wellness Log`:'Wellness Log';
+      data.weight=parseFloat(document.getElementById('ef-wt')?.value)||null;
+      data.height=parseFloat(document.getElementById('ef-ht')?.value)||null;
+      data.hydration=parseInt(document.getElementById('ef-hyd')?.value)||null;
+      data.exercised=document.getElementById('ef-ex')?.checked||false;
+      data.activity=document.getElementById('ef-act')?.value||null;
+      data.activity_mins=parseInt(document.getElementById('ef-actm')?.value)||null;
+      data.mood=document.getElementById('ef-mood')?.value||null;
+      data.energy=parseInt(document.getElementById('ef-en')?.value)||null;
+      data.sleep=parseFloat(document.getElementById('ef-sl')?.value)||null;
+    } else {
+      data.title=document.getElementById('ef-title')?.value||'';
+      if(!data.title){toast('Please add a title.',true);return;}
+      const dateVal=document.getElementById('ef-date')?.value;
+      data.date=dateVal?new Date(dateVal).toISOString():new Date().toISOString();
+      const endVal=document.getElementById('ef-end')?.value;
+      data.end_date=endVal?new Date(endVal).toISOString():null;
+      data.location=document.getElementById('ef-loc')?.value||null;
+      data.description=document.getElementById('ef-desc')?.value||null;
+      data.appt_type=document.getElementById('ef-apt')?.value||null;
+      data.recurrence=document.getElementById('ef-rec')?.value||'None';
+      data.member_id=document.getElementById('ef-mem')?.value||null;
+      data.participants=Array.from(document.querySelectorAll('#ef-parts button[data-sel="true"]')).map(b=>b.dataset.mid).filter(Boolean);
+      data.tags=Array.from(document.querySelectorAll('#ef-tags button[data-sel="true"]')).map(b=>b.dataset.tag).filter(Boolean);
+    }
+    let res;
+    if(evId){res=await sb.from('events').update(data).eq('id',evId).select().single();}
+    else{res=await sb.from('events').insert(data).select().single();}
+    if(res.error){console.error('Event save error',res.error);toast('Error saving. Check console.',true);return;}
+    if(evId)A.events=A.events.map(e=>e.id===evId?res.data:e);
+    else A.events.push(res.data);
+    closeModal();toast(evId?'Entry updated!':'Entry added!');renderCal();
+  }catch(e){console.error('saveEv error',e);toast('Unexpected error.',true);}
 }
-window.saveEvent=saveEvent;
+window.saveEv=saveEv;
 
-function viewEvent(id) {
-  const ev = APP.events.find(e=>e.id===id);
-  if(!ev) return;
-  const cfg = ET[ev.type];
-  const mem = getMember(ev.member_id);
+function viewEv(id){
+  const ev=A.events.find(e=>e.id===id);if(!ev)return;
+  const cfg=ET[ev.type];
   let body=`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
       <span style="font-size:28px">${cfg.icon}</span>
@@ -802,57 +709,51 @@ function viewEvent(id) {
     </div>`;
   if(ev.type==='wellness'){
     body+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px">
-      ${[['⚖️','Weight',ev.weight&&`${ev.weight}kg`],['💧','Hydration',ev.hydration&&`${ev.hydration}ml`],['😴','Sleep',ev.sleep&&`${ev.sleep}h`],['⚡','Energy',ev.energy&&`${ev.energy}%`],['😊','Mood',ev.mood]].map(([ic,k,v])=>v?`<div style="background:${T.parchment};border-radius:9px;padding:7px 11px"><div style="font-size:10px;color:${T.muted};font-weight:700">${ic} ${k}</div><div style="font-size:13px;font-weight:700">${v}</div></div>`:'').join('')}
+      ${[['⚖️','Weight',ev.weight&&`${ev.weight}kg`],['💧','Hydration',ev.hydration&&`${ev.hydration}ml`],['😴','Sleep',ev.sleep&&`${ev.sleep}h`],['⚡','Energy',ev.energy&&`${ev.energy}%`],['😊','Mood',ev.mood]].filter(([,,v])=>v).map(([ic,k,v])=>`<div style="background:${T.parchment};border-radius:9px;padding:7px 11px"><div style="font-size:10px;color:${T.muted};font-weight:700">${ic} ${k}</div><div style="font-size:13px;font-weight:700">${v}</div></div>`).join('')}
       ${ev.exercised?`<div style="background:${T.sageLight};border-radius:9px;padding:7px 11px;grid-column:span 2"><div style="font-size:10px;color:${T.sage};font-weight:700">🏃 Exercise</div><div style="font-size:13px;font-weight:700">${ev.activity} · ${ev.activity_mins} min</div></div>`:''}
     </div>`;
   }
   if(ev.participants?.length){
     body+=`<div style="margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:${T.muted};margin-bottom:5px">PARTICIPANTS</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${ev.participants.map(pid=>{const m=getMember(pid);return m?`<div style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600">${av(m,22)} ${m.name}</div>`:''}).join('')}
+        ${ev.participants.map(pid=>{const m=getMem(pid);return m?`<div style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600">${av(m,22)} ${m.name}</div>`:''}).join('')}
       </div></div>`;
   }
-  if(ev.description) body+=`<div style="background:${T.parchment};border-radius:9px;padding:9px 11px;font-size:13px;line-height:1.5;margin-bottom:10px">${ev.description}</div>`;
-  if(ev.tags?.length) body+=`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">${ev.tags.map(t=>`<span class="chip" style="background:${T.parchment};color:${T.muted}">${t}</span>`).join('')}</div>`;
+  if(ev.description)body+=`<div style="background:${T.parchment};border-radius:9px;padding:9px 11px;font-size:13px;line-height:1.5;margin-bottom:10px">${ev.description}</div>`;
+  if(ev.tags?.length)body+=`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">${ev.tags.map(t=>`<span class="chip" style="background:${T.parchment};color:${T.muted}">${t}</span>`).join('')}</div>`;
   body+=`<div style="display:flex;gap:10px;margin-top:6px">
-    <button class="btn btn-primary" style="flex:1" onclick="closeModal();openEventForm('${ev.type}','${ev.id}',null)">✏️ Edit</button>
-    <button class="btn btn-danger" style="flex:1" onclick="deleteEvent('${ev.id}')">🗑 Delete</button>
+    <button class="btn btn-primary" style="flex:1" onclick="closeModal();openEvForm('${ev.type}','${ev.id}',null)">✏️ Edit</button>
+    <button class="btn btn-danger" style="flex:1" onclick="delEv('${ev.id}')">🗑 Delete</button>
   </div>`;
-  showModal(cfg.label, body);
+  showModal(cfg.label,body);
 }
-window.viewEvent=viewEvent;
+window.viewEv=viewEv;
 
-async function deleteEvent(id) {
-  if(!confirm('Delete this entry?')) return;
-  const {error} = await sb.from('events').delete().eq('id',id);
-  if(error){showToast('Error deleting.',true);return;}
-  APP.events = APP.events.filter(e=>e.id!==id);
-  closeModal();
-  showToast('Entry deleted.');
-  renderCalendar();
+async function delEv(id){
+  if(!confirm('Delete this entry?'))return;
+  const{error}=await sb.from('events').delete().eq('id',id);
+  if(error){toast('Error deleting.',true);return;}
+  A.events=A.events.filter(e=>e.id!==id);
+  closeModal();toast('Entry deleted.');renderCal();
 }
-window.deleteEvent=deleteEvent;
+window.delEv=delEv;
 
 // ── NOTEBOOK ──────────────────────────────────────────────────────────────────
-const NOTE_COLORS=['#d4e8d6','#f0d4de','#f5e4c4','#d0e4f0','#e8d8f0','#ede8df','#f2ddd4'];
-
-function renderNotebook() {
-  const notes = APP.notes;
-  const groups = APP.noteGroups;
-  const filtered = notes.filter(n=>{
-    if(APP.noteFilterGroup==='none'&&n.group_id) return false;
-    if(APP.noteFilterGroup!=='all'&&APP.noteFilterGroup!=='none'&&n.group_id!==APP.noteFilterGroup) return false;
-    if(APP.noteSearch){const q=APP.noteSearch.toLowerCase();const txt=[n.title,n.content,...(n.tags||[]),...(n.checklist||[]).map(c=>c.text)].join(' ').toLowerCase();if(!txt.includes(q))return false;}
+function renderNB(){
+  const notes=A.notes,groups=A.noteGroups;
+  const filtered=notes.filter(n=>{
+    if(A.noteFGroup==='none'&&n.group_id)return false;
+    if(A.noteFGroup!=='all'&&A.noteFGroup!=='none'&&n.group_id!==A.noteFGroup)return false;
+    if(A.noteSearch){const q=A.noteSearch.toLowerCase();if(![n.title,n.content,...(n.tags||[]),...(n.checklist||[]).map(c=>c.text)].join(' ').toLowerCase().includes(q))return false;}
     return true;
   });
-  const pinned=filtered.filter(n=>n.pinned), rest=filtered.filter(n=>!n.pinned);
-
-  const noteCard=n=>{
-    const mem=getMember(n.member_id);
+  const pinned=filtered.filter(n=>n.pinned),rest=filtered.filter(n=>!n.pinned);
+  const nCard=n=>{
+    const mem=getMem(n.member_id);
     const grp=groups.find(g=>g.id===n.group_id);
-    const done=(n.checklist||[]).filter(c=>c.done).length, total=(n.checklist||[]).length;
-    return`<div class="note-card" style="background:${n.color}" onclick="openNoteEditor('${n.id}')">
-      ${n.pinned?`<div style="font-size:10px;margin-bottom:3px">📌</div>`:''}
+    const done=(n.checklist||[]).filter(c=>c.done).length,total=(n.checklist||[]).length;
+    return`<div class="note-card" style="background:${n.color}" onclick="openNote('${n.id}')">
+      ${n.pinned?'<div style="font-size:10px;margin-bottom:3px">📌</div>':''}
       <div style="font-weight:800;font-size:13px;color:${T.ink};margin-bottom:5px;line-height:1.3">${n.title||'Untitled'}</div>
       ${n.content?`<div style="font-size:12px;color:${T.muted};line-height:1.5;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:6px">${n.content}</div>`:''}
       ${total>0?`<div style="font-size:11px;color:${T.muted};margin-bottom:5px">✅ ${done}/${total}</div>`:''}
@@ -865,197 +766,235 @@ function renderNotebook() {
 
   document.getElementById('page-notebook').innerHTML=`
     <div class="page-header">
-      <div class="family-label">${APP.family?.name||''}</div>
-      <div class="page-title">Notebook
-        <button class="btn btn-primary btn-sm" onclick="openNoteEditor(null)">+ Note</button>
-      </div>
+      <div class="family-label">${A.family?.name||''}</div>
+      <div class="page-title">Notebook <button class="btn btn-primary btn-sm" onclick="openNote(null)">+ Note</button></div>
     </div>
     <div style="padding:10px 16px 0">
-      <input class="inp" placeholder="🔍  Search notes…" value="${APP.noteSearch}" oninput="APP.noteSearch=this.value;renderNotebook()" style="margin-bottom:10px">
+      <input class="inp" placeholder="🔍  Search notes…" value="${A.noteSearch}" oninput="A.noteSearch=this.value;renderNB()" style="margin-bottom:10px">
       <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">
-        ${[{id:'all',name:'All'},{id:'none',name:'Uncategorized'},...groups].map(g=>`<button onclick="APP.noteFilterGroup='${g.id}';renderNotebook()" style="padding:4px 12px;border-radius:99px;border:1.5px solid ${APP.noteFilterGroup===g.id?T.sage:T.border};background:${APP.noteFilterGroup===g.id?T.sage:'#fff'};color:${APP.noteFilterGroup===g.id?'#fff':T.muted};font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0">${g.name}</button>`).join('')}
-        <button onclick="addNoteGroup()" style="padding:4px 12px;border-radius:99px;border:1.5px dashed ${T.border};background:${T.parchment};color:${T.muted};font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0">+ Group</button>
+        ${[{id:'all',name:'All'},{id:'none',name:'Uncategorized'},...groups].map(g=>`<button onclick="A.noteFGroup='${g.id}';renderNB()" style="padding:4px 12px;border-radius:99px;border:1.5px solid ${A.noteFGroup===g.id?T.sage:T.border};background:${A.noteFGroup===g.id?T.sage:'#fff'};color:${A.noteFGroup===g.id?'#fff':T.muted};font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0">${g.name}</button>`).join('')}
+        <button onclick="openAddGroup()" style="padding:4px 12px;border-radius:99px;border:1.5px dashed ${T.border};background:${T.parchment};color:${T.muted};font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0">+ Group</button>
       </div>
     </div>
     <div style="padding:10px 16px 0">
       ${pinned.length?`<div style="font-size:11px;font-weight:700;color:${T.muted};text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">📌 Pinned</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">${pinned.map(noteCard).join('')}</div>`:''}
-      ${rest.length?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${rest.map(noteCard).join('')}</div>`:''}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">${pinned.map(nCard).join('')}</div>`:''}
+      ${rest.length?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${rest.map(nCard).join('')}</div>`:''}
       ${filtered.length===0?`<div style="text-align:center;color:${T.muted};padding:48px 0;font-size:14px">No notes yet ✍️</div>`:''}
     </div>`;
 }
 
-function openNoteEditor(noteId) {
-  const note = noteId ? APP.notes.find(n=>n.id===noteId) : null;
-  const groups = APP.noteGroups;
-  const checklist = note?.checklist||[];
+function openAddGroup(){
+  showModal('New Group',`
+    <div class="form-row"><label class="lbl">Group name</label><input class="inp" id="ng-name" placeholder="e.g. 🏠 Household" autofocus></div>
+    <button class="btn btn-primary btn-full" onclick="saveGroup()">Create Group</button>`);
+}
+window.openAddGroup=openAddGroup;
+
+async function saveGroup(){
+  if(!A.family)return;
+  const name=document.getElementById('ng-name')?.value?.trim();
+  if(!name){toast('Please add a name.',true);return;}
+  const{data,error}=await sb.from('note_groups').insert({family_id:A.family.id,name}).select().single();
+  if(error){toast('Error creating group.',true);console.error(error);return;}
+  A.noteGroups.push(data);
+  closeModal();toast('Group created!');renderNB();
+}
+window.saveGroup=saveGroup;
+
+function openNote(noteId){
+  const note=noteId?A.notes.find(n=>n.id===noteId):null;
+  const groups=A.noteGroups;
+  const cl=note?.checklist||[];
   showModal(noteId?'Edit Note':'New Note',`
-    <input id="ne-title" class="inp" value="${note?.title||''}" placeholder="Title…" style="font-size:16px;font-weight:700;margin-bottom:8px">
-    <textarea id="ne-content" class="inp" rows="3" placeholder="Write your note…" style="resize:none;margin-bottom:10px">${note?.content||''}</textarea>
-    <div id="ne-checklist" style="margin-bottom:8px">
-      ${checklist.map((item,i)=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+    <input id="ne-t" class="inp" value="${note?.title||''}" placeholder="Title…" style="font-size:16px;font-weight:700;margin-bottom:8px" autofocus>
+    <textarea id="ne-c" class="inp" rows="3" placeholder="Write your note…" style="resize:none;margin-bottom:10px">${note?.content||''}</textarea>
+    <div id="ne-cl" style="margin-bottom:6px">
+      ${cl.map((item,i)=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
         <input type="checkbox" id="nc-${i}" ${item.done?'checked':''}>
-        <input class="inp" id="nt-${i}" value="${item.text}" style="flex:1;font-size:13px" placeholder="Item…">
-        <button onclick="this.parentElement.remove()" style="background:none;border:none;color:${T.muted};font-size:15px;cursor:pointer">×</button>
+        <input class="inp" id="nt-${i}" value="${item.text}" style="flex:1;font-size:13px;padding:6px 10px" placeholder="Item…">
+        <button onclick="this.parentElement.remove()" style="background:none;border:none;color:${T.muted};font-size:16px;cursor:pointer;padding:4px">×</button>
       </div>`).join('')}
     </div>
-    <button onclick="addChecklistItem()" style="font-size:12px;color:${T.sage};background:none;border:1px dashed ${T.sageMid};border-radius:8px;padding:4px 10px;cursor:pointer;font-weight:600;margin-bottom:12px">+ Checklist item</button>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-      ${NOTE_COLORS.map(c=>`<div onclick="document.querySelectorAll('.nc-swatch').forEach(s=>s.style.border='2px solid transparent');this.style.border='3px solid ${T.sage}';document.getElementById('ne-color').value='${c}'" class="nc-swatch" style="width:22px;height:22px;border-radius:50%;background:${c};cursor:pointer;border:${(note?.color||NOTE_COLORS[0])===c?'3px solid '+T.sage:'2px solid transparent'}"></div>`).join('')}
-      <input type="hidden" id="ne-color" value="${note?.color||NOTE_COLORS[0]}">
+    <button onclick="addCLItem()" style="font-size:12px;color:${T.sage};background:none;border:1px dashed ${T.sageMid};border-radius:8px;padding:4px 10px;cursor:pointer;font-weight:600;margin-bottom:14px">+ Checklist item</button>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+      ${NOTE_COLORS.map(c=>`<div onclick="document.querySelectorAll('.ncs').forEach(s=>s.style.outline='none');this.style.outline='3px solid ${T.sage}';document.getElementById('ne-col').value='${c}'" class="ncs" style="width:22px;height:22px;border-radius:50%;background:${c};cursor:pointer;outline:${(note?.color||NOTE_COLORS[0])===c?'3px solid '+T.sage:'none'};outline-offset:2px"></div>`).join('')}
+      <input type="hidden" id="ne-col" value="${note?.color||NOTE_COLORS[0]}">
     </div>
-    <div class="grid2" style="margin-bottom:10px">
+    <div class="grid2">
       <div class="form-row" style="margin:0"><label class="lbl">Group</label>
-        <select class="sel" id="ne-group"><option value="">No group</option>${groups.map(g=>`<option value="${g.id}"${note?.group_id===g.id?' selected':''}>${g.name}</option>`).join('')}</select></div>
+        <select class="sel" id="ne-grp">
+          <option value="">No group</option>
+          <option value="__new__">+ New Group…</option>
+          ${groups.map(g=>`<option value="${g.id}"${note?.group_id===g.id?' selected':''}>${g.name}</option>`).join('')}
+        </select></div>
       <div class="form-row" style="margin:0"><label class="lbl">Member</label>
-        <select class="sel" id="ne-member"><option value="">Family</option>${APP.members.map(m=>`<option value="${m.id}"${note?.member_id===m.id?' selected':''}>${m.name}</option>`).join('')}</select></div>
+        <select class="sel" id="ne-mem"><option value="">Family</option>${A.members.map(m=>`<option value="${m.id}"${note?.member_id===m.id?' selected':''}>${m.name}</option>`).join('')}</select></div>
     </div>
-    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-bottom:14px;cursor:pointer">
-      <input type="checkbox" id="ne-pinned" ${note?.pinned?'checked':''}> 📌 Pin this note
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-bottom:16px;cursor:pointer">
+      <input type="checkbox" id="ne-pin" ${note?.pinned?'checked':''}> 📌 Pin this note
     </label>
     <div style="display:flex;gap:10px">
       <button class="btn btn-primary" style="flex:1" onclick="saveNote('${noteId||''}')">Save</button>
-      ${noteId?`<button class="btn btn-danger" onclick="deleteNote('${noteId}')">🗑</button>`:''}
-    </div>
-  `);
-}
-window.openNoteEditor=openNoteEditor;
-
-function addChecklistItem() {
-  const cont = document.getElementById('ne-checklist');
-  const i = cont.children.length;
-  const div = document.createElement('div');
-  div.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:5px';
-  div.innerHTML=`<input type="checkbox" id="nc-${i}"><input class="inp" id="nt-${i}" style="flex:1;font-size:13px" placeholder="Item…"><button onclick="this.parentElement.remove()" style="background:none;border:none;color:${T.muted};font-size:15px;cursor:pointer">×</button>`;
-  cont.appendChild(div);
-}
-window.addChecklistItem=addChecklistItem;
-
-async function saveNote(noteId) {
-  if(!APP.family){showToast('Set up your family first.',true);return;}
-  const checklist=[];
-  document.querySelectorAll('#ne-checklist > div').forEach((row,i)=>{
-    const cb=row.querySelector('input[type="checkbox"]');
-    const inp=row.querySelector('input[type="text"],input:not([type])');
-    if(inp?.value?.trim()) checklist.push({id:'c'+i,text:inp.value.trim(),done:cb?.checked||false});
+      ${noteId?`<button class="btn btn-danger" onclick="delNote('${noteId}')">🗑</button>`:''}
+    </div>`);
+  // Handle "New Group" selection
+  document.getElementById('ne-grp').addEventListener('change',function(){
+    if(this.value==='__new__'){
+      const name=prompt('New group name:');
+      if(name&&A.family){
+        sb.from('note_groups').insert({family_id:A.family.id,name}).select().single().then(({data})=>{
+          if(data){
+            A.noteGroups.push(data);
+            const opt=document.createElement('option');
+            opt.value=data.id;opt.textContent=data.name;opt.selected=true;
+            this.insertBefore(opt,this.querySelector('option[value="__new__"]'));
+            this.value=data.id;
+            toast('Group created!');
+          }
+        });
+      } else { this.value=''; }
+    }
   });
+}
+window.openNote=openNote;
+
+function addCLItem(){
+  const cont=document.getElementById('ne-cl');
+  const i=cont.children.length;
+  const div=document.createElement('div');
+  div.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:6px';
+  div.innerHTML=`<input type="checkbox" id="nc-${i}"><input class="inp" id="nt-${i}" style="flex:1;font-size:13px;padding:6px 10px" placeholder="Item…"><button onclick="this.parentElement.remove()" style="background:none;border:none;color:${T.muted};font-size:16px;cursor:pointer;padding:4px">×</button>`;
+  cont.appendChild(div);
+  div.querySelector('input[type="text"],input:not([type="checkbox"])').focus();
+  // Enter key adds next item
+  div.querySelector('input:not([type="checkbox"])').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addCLItem();}});
+}
+window.addCLItem=addCLItem;
+
+async function saveNote(noteId){
+  if(!A.family){toast('Set up your family first.',true);return;}
+  const checklist=[];
+  document.querySelectorAll('#ne-cl > div').forEach((row,i)=>{
+    const cb=row.querySelector('input[type="checkbox"]');
+    const inp=row.querySelector('input:not([type="checkbox"])');
+    if(inp?.value?.trim())checklist.push({id:'c'+i,text:inp.value.trim(),done:cb?.checked||false});
+  });
+  const grpVal=document.getElementById('ne-grp')?.value;
   const data={
-    family_id:APP.family.id,
-    title:document.getElementById('ne-title').value,
-    content:document.getElementById('ne-content').value,
-    color:document.getElementById('ne-color').value,
-    group_id:document.getElementById('ne-group').value||null,
-    member_id:document.getElementById('ne-member').value||null,
-    pinned:document.getElementById('ne-pinned').checked,
+    family_id:A.family.id,
+    title:document.getElementById('ne-t')?.value||'',
+    content:document.getElementById('ne-c')?.value||'',
+    color:document.getElementById('ne-col')?.value||NOTE_COLORS[0],
+    group_id:grpVal&&grpVal!=='__new__'?grpVal:null,
+    member_id:document.getElementById('ne-mem')?.value||null,
+    pinned:document.getElementById('ne-pin')?.checked||false,
     checklist,
   };
-  let result;
-  if(noteId){result=await sb.from('notes').update(data).eq('id',noteId).select().single();}
-  else{result=await sb.from('notes').insert(data).select().single();}
-  if(result.error){showToast('Error saving note.',true);return;}
-  if(noteId) APP.notes=APP.notes.map(n=>n.id===noteId?result.data:n);
-  else APP.notes.push(result.data);
-  closeModal();showToast(noteId?'Note updated!':'Note saved!');renderNotebook();
+  let res;
+  if(noteId)res=await sb.from('notes').update(data).eq('id',noteId).select().single();
+  else res=await sb.from('notes').insert(data).select().single();
+  if(res.error){toast('Error saving note.',true);console.error(res.error);return;}
+  if(noteId)A.notes=A.notes.map(n=>n.id===noteId?res.data:n);
+  else A.notes.push(res.data);
+  closeModal();toast(noteId?'Note updated!':'Note saved!');renderNB();
 }
 window.saveNote=saveNote;
 
-async function deleteNote(id){
+async function delNote(id){
   if(!confirm('Delete this note?'))return;
   await sb.from('notes').delete().eq('id',id);
-  APP.notes=APP.notes.filter(n=>n.id!==id);
-  closeModal();showToast('Note deleted.');renderNotebook();
+  A.notes=A.notes.filter(n=>n.id!==id);
+  closeModal();toast('Note deleted.');renderNB();
 }
-window.deleteNote=deleteNote;
-
-async function addNoteGroup(){
-  const name=prompt('Group name:');
-  if(!name||!APP.family)return;
-  const{data}=await sb.from('note_groups').insert({family_id:APP.family.id,name}).select().single();
-  if(data){APP.noteGroups.push(data);renderNotebook();}
-}
-window.addNoteGroup=addNoteGroup;
+window.delNote=delNote;
 
 // ── MEDS ──────────────────────────────────────────────────────────────────────
-function renderMeds() {
-  const dm=APP.dailyMeds, om=APP.occMeds;
-  const s=sym();
+function renderMeds(){
+  const dm=A.dailyMeds,om=A.occMeds,s=symC();
   const daysLeft=med=>{const td=(med.member_ids||[]).length*(med.dose_per_day||1);if(!td)return null;return Math.floor((med.stock_today||0)/td);};
   const lastsUntil=med=>{const d=daysLeft(med);return d===null?'—':fmt(addDays(todayD(),d));};
   const updStock=med=>(med.stock_today||0)+((parseInt(med.new_order_pkgs)||0)*(med.units_per_pkg||0));
   const updUntil=med=>{const td=(med.member_ids||[]).length*(med.dose_per_day||1);if(!td||!med.new_order_pkgs)return'—';return fmt(addDays(todayD(),Math.floor(updStock(med)/td)));};
   const orderPrice=med=>((parseInt(med.new_order_pkgs)||0)*(med.price_per_pkg||0)).toFixed(2);
   const expDays=d=>Math.floor((new Date(d)-new Date())/(1000*60*60*24));
-  const expStatus=d=>{const n=expDays(d);if(n<0)return'expired';if(n<30)return'critical';if(n<90)return'soon';return'ok';};
-  const totalOrder=dm.reduce((s,m)=>s+(parseInt(m.new_order_pkgs)||0)*(m.price_per_pkg||0),0);
-  const grand=(totalOrder+(parseFloat(APP.family?.transport_cost)||0)).toFixed(2);
+  const expSt=d=>{const n=expDays(d);if(n<0)return'expired';if(n<30)return'critical';if(n<90)return'soon';return'ok';};
+  const totalOrder=dm.reduce((sum,m)=>sum+(parseInt(m.new_order_pkgs)||0)*(m.price_per_pkg||0),0);
+  const grand=(totalOrder+(parseFloat(A.family?.transport_cost)||0)).toFixed(2);
 
   document.getElementById('page-meds').innerHTML=`
     <div class="page-header">
-      <div class="family-label">${APP.family?.name||''}</div>
+      <div class="family-label">${A.family?.name||''}</div>
       <div class="page-title">Meds & Supplies</div>
     </div>
     <div style="padding:10px 16px 0;display:flex;gap:8px;align-items:center">
-      <select class="sel" style="width:auto;font-size:12px" onchange="updateFamilyCurrency(this.value)">
-        ${CURRENCIES.map(c=>`<option value="${c.code}"${(APP.family?.currency||'EUR')===c.code?' selected':''}>${c.code} (${c.sym})</option>`).join('')}
+      <select class="sel" style="width:auto;font-size:12px" onchange="updateCurrency(this.value)">
+        ${CURRENCIES.map(c=>`<option value="${c.code}"${(A.family?.currency||'EUR')===c.code?' selected':''}>${c.code} (${c.sym})</option>`).join('')}
       </select>
+      <span style="font-size:12px;color:${T.muted}">All prices in ${s}</span>
     </div>
 
     <div style="padding:14px 16px 0">
-      <div style="font-family:'Playfair Display',serif;font-size:17px;margin-bottom:10px">Daily Medications</div>
-      ${dm.length===0&&`<div style="color:${T.muted};font-size:13px;margin-bottom:10px;font-style:italic">No daily medications yet.</div>`}
+      <div style="font-family:'Playfair Display',serif;font-size:17px;color:${T.ink};margin-bottom:10px">Daily Medications</div>
+      ${dm.length===0?`<div style="color:${T.muted};font-size:13px;margin-bottom:10px;font-style:italic">No daily medications added yet.</div>`:''}
       <div style="overflow-x:auto;border-radius:13px;border:1px solid ${T.border};background:${T.surface}">
         <table class="tbl">
-          <thead><tr>
-            ${['Medication','Members','Dose/day','Pkg units','Pkg price','In stock','Lasts until','New order','Order cost','Updated until',''].map(h=>`<th>${h}</th>`).join('')}
-          </tr></thead>
+          <thead><tr>${['Medication','Members','Dose/day','Pkg units','Pkg price','In stock','Lasts until','New order','Order cost','Updated until',''].map(h=>`<th>${h}</th>`).join('')}</tr></thead>
           <tbody>
-            ${dm.map(med=>{
+            ${dm.map((med,idx)=>{
               const dl=daysLeft(med);
               const st=dl===null?'ok':dl<=7?'critical':dl<=14?'low':'ok';
-              const rowMems=APP.members.filter(m=>(med.member_ids||[]).includes(m.id));
+              const rowMems=A.members.filter(m=>(med.member_ids||[]).includes(m.id));
               return`<tr>
                 <td><div style="font-weight:700">${med.name}</div>${med.shared?`<span class="chip" style="background:${T.skyLight};color:${T.sky};font-size:10px">Shared</span>`:''}<div style="font-size:11px;color:${T.muted}">${med.note||''}</div></td>
                 <td><div style="display:flex;gap:3px">${rowMems.map(m=>av(m,20)).join('')}</div></td>
                 <td>${med.dose_per_day}</td>
                 <td>${med.units_per_pkg}</td>
                 <td>${s}${(med.price_per_pkg||0).toFixed(2)}</td>
-                <td style="font-weight:700;color:${st==='critical'?T.rose:st==='low'?T.honey:T.sage}">${med.stock_today}${st==='critical'?`<div style="font-size:10px;color:${T.rose}">⚠️ Low!</div>`:''}</td>
+                <td style="font-weight:700;color:${st==='critical'?T.rose:st==='low'?T.honey:T.sage}">
+                  ${med.stock_today}
+                  ${st==='critical'?`<div style="font-size:10px;color:${T.rose}">⚠️ Low!</div>`:''}
+                  ${st==='low'?`<div style="font-size:10px;color:${T.honey}">Soon</div>`:''}
+                </td>
                 <td style="color:${st==='critical'?T.rose:st==='low'?T.honey:T.muted}">${lastsUntil(med)}</td>
-                <td><input type="number" min="0" value="${med.new_order_pkgs||''}" onchange="updateMedOrder('${med.id}',this.value)" style="width:55px;padding:3px 6px;border-radius:7px;border:1px solid ${T.border};font-size:13px;text-align:center"></td>
-                <td style="font-weight:600;color:${T.sage}">${med.new_order_pkgs?`${s}${orderPrice(med)}`:'—'}</td>
-                <td style="font-weight:600;color:${T.sage};font-size:12px">${med.new_order_pkgs?updUntil(med):'—'}</td>
-                <td>${med.new_order_pkgs?`<button onclick="confirmMedOrder('${med.id}')" style="background:${T.sageLight};border:1px solid ${T.sageMid};border-radius:7px;padding:3px 8px;font-size:11px;font-weight:700;color:${T.sage};cursor:pointer;white-space:nowrap">✓ Got it</button>`:''}
-                <button onclick="deleteDailyMed('${med.id}')" style="background:none;border:none;color:${T.muted};cursor:pointer;font-size:14px;margin-left:4px">🗑</button></td>
+                <td><input type="number" min="0" value="${med.new_order_pkgs||''}" placeholder="0" onfocus="if(this.value==='0')this.value=''" onchange="updateMedOrder('${med.id}',this.value)" style="width:55px;padding:4px 6px;border-radius:7px;border:1px solid ${T.border};font-size:13px;text-align:center"></td>
+                <td style="font-weight:600;color:${T.sage}">${med.new_order_pkgs&&med.new_order_pkgs!=='0'?`${s}${orderPrice(med)}`:'—'}</td>
+                <td style="font-weight:600;color:${T.sage};font-size:12px">${med.new_order_pkgs&&med.new_order_pkgs!=='0'?updUntil(med):'—'}</td>
+                <td>
+                  ${med.new_order_pkgs&&med.new_order_pkgs!=='0'?`<button onclick="confirmOrder('${med.id}')" style="background:${T.sageLight};border:1px solid ${T.sageMid};border-radius:7px;padding:3px 8px;font-size:11px;font-weight:700;color:${T.sage};cursor:pointer;white-space:nowrap">✓ Got it</button>`:''}
+                  <button onclick="delDM('${med.id}')" style="background:none;border:none;color:${T.muted};cursor:pointer;font-size:14px;margin-left:4px">🗑</button>
+                </td>
               </tr>`;
             }).join('')}
             <tr style="background:${T.parchment}">
-              <td colspan="7" style="font-weight:800">Grand Total
+              <td colspan="7" style="font-weight:800;color:${T.ink}">
+                Grand Total
                 <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
                   <span style="font-size:11px;color:${T.muted};font-weight:600">+ Transport:</span>
-                  <input type="number" value="${APP.family?.transport_cost||0}" onchange="updateTransport(this.value)" style="width:60px;padding:3px 6px;border-radius:7px;border:1px solid ${T.border};font-size:12px">
+                  <input type="number" value="${A.family?.transport_cost||0}" onfocus="this.select()" onchange="updateTransport(this.value)" style="width:65px;padding:3px 6px;border-radius:7px;border:1px solid ${T.border};font-size:12px">
                   <span style="font-size:11px;color:${T.muted}">${s}</span>
                 </div>
               </td>
-              <td colspan="4" style="font-weight:800;color:${T.sage};font-size:15px">${s}${grand}</td>
+              <td colspan="4" style="font-weight:800;color:${T.sage};font-size:16px">${s}${grand}</td>
             </tr>
           </tbody>
         </table>
       </div>
-      <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="openAddDailyMed()">+ Add medication</button>
+      <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="openAddDM()">+ Add medication</button>
     </div>
 
     <div style="padding:18px 16px 0">
-      <div style="font-family:'Playfair Display',serif;font-size:17px;margin-bottom:10px">Occasional Medications</div>
+      <div style="font-family:'Playfair Display',serif;font-size:17px;color:${T.ink};margin-bottom:10px">Occasional Medications</div>
       <div style="overflow-x:auto;border-radius:13px;border:1px solid ${T.border};background:${T.surface}">
         <table class="tbl">
           <thead><tr>${['Medication','In stock','Last counted','Expiry','Note',''].map(h=>`<th>${h}</th>`).join('')}</tr></thead>
           <tbody>
             ${om.map(med=>{
-              const es=med.expiry?expStatus(med.expiry):'ok';
+              const es=med.expiry?expSt(med.expiry):'ok';
               const ed=med.expiry?expDays(med.expiry):null;
               return`<tr>
                 <td style="font-weight:700">${med.name}</td>
-                <td><input type="number" value="${med.stock}" onchange="updateOccStock('${med.id}',this.value)" style="width:60px;padding:3px 6px;border-radius:7px;border:1px solid ${T.border};font-size:13px;text-align:center"></td>
+                <td><input type="number" value="${med.stock}" onfocus="this.select()" onchange="updateOccStock('${med.id}',this.value)" style="width:60px;padding:4px 6px;border-radius:7px;border:1px solid ${T.border};font-size:13px;text-align:center"></td>
                 <td style="color:${T.muted};font-size:12px">${fmt(med.last_count)}</td>
                 <td style="font-weight:${es!=='ok'?700:400};color:${es==='ok'?T.muted:T.rose}">
                   ${fmt(med.expiry)}
@@ -1064,146 +1003,137 @@ function renderMeds() {
                   ${es==='soon'?`<div style="font-size:10px;color:${T.honey}">⏳ ${ed}d left</div>`:''}
                 </td>
                 <td style="color:${T.muted};font-size:12px">${med.note||''}</td>
-                <td><button onclick="deleteOccMed('${med.id}')" style="background:none;border:none;color:${T.muted};cursor:pointer;font-size:14px">🗑</button></td>
+                <td><button onclick="delOM('${med.id}')" style="background:none;border:none;color:${T.muted};cursor:pointer;font-size:14px">🗑</button></td>
               </tr>`;
             }).join('')}
           </tbody>
         </table>
       </div>
-      <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="openAddOccMed()">+ Add occasional med</button>
-    </div>
-  `;
+      <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="openAddOM()">+ Add occasional med</button>
+    </div>`;
 }
 
-async function updateFamilyCurrency(code){
-  if(!APP.family)return;
-  const{data}=await sb.from('families').update({currency:code}).eq('id',APP.family.id).select().single();
-  if(data){APP.family=data;renderMeds();}
+async function updateCurrency(code){
+  if(!A.family)return;
+  const{data}=await sb.from('families').update({currency:code}).eq('id',A.family.id).select().single();
+  if(data){A.family=data;renderMeds();}
 }
-window.updateFamilyCurrency=updateFamilyCurrency;
+window.updateCurrency=updateCurrency;
 
 async function updateTransport(val){
-  if(!APP.family)return;
-  await sb.from('families').update({transport_cost:parseFloat(val)||0}).eq('id',APP.family.id);
-  if(APP.family) APP.family.transport_cost=parseFloat(val)||0;
+  if(!A.family)return;
+  await sb.from('families').update({transport_cost:parseFloat(val)||0}).eq('id',A.family.id);
+  if(A.family)A.family.transport_cost=parseFloat(val)||0;
 }
 window.updateTransport=updateTransport;
 
 async function updateMedOrder(id,val){
   const{data}=await sb.from('daily_meds').update({new_order_pkgs:parseInt(val)||0}).eq('id',id).select().single();
-  if(data){APP.dailyMeds=APP.dailyMeds.map(m=>m.id===id?data:m);renderMeds();}
+  if(data){A.dailyMeds=A.dailyMeds.map(m=>m.id===id?data:m);renderMeds();}
 }
 window.updateMedOrder=updateMedOrder;
 
-async function confirmMedOrder(id){
-  const med=APP.dailyMeds.find(m=>m.id===id);if(!med)return;
-  const newStock=(med.stock_today||0)+((parseInt(med.new_order_pkgs)||0)*(med.units_per_pkg||0));
-  const{data}=await sb.from('daily_meds').update({stock_today:newStock,new_order_pkgs:0}).eq('id',id).select().single();
-  if(data){APP.dailyMeds=APP.dailyMeds.map(m=>m.id===id?data:m);showToast('Stock updated!');renderMeds();}
+async function confirmOrder(id){
+  const med=A.dailyMeds.find(m=>m.id===id);if(!med)return;
+  const ns=(med.stock_today||0)+((parseInt(med.new_order_pkgs)||0)*(med.units_per_pkg||0));
+  const{data}=await sb.from('daily_meds').update({stock_today:ns,new_order_pkgs:0}).eq('id',id).select().single();
+  if(data){A.dailyMeds=A.dailyMeds.map(m=>m.id===id?data:m);toast('Stock updated! ✅');renderMeds();}
 }
-window.confirmMedOrder=confirmMedOrder;
+window.confirmOrder=confirmOrder;
 
 async function updateOccStock(id,val){
   const{data}=await sb.from('occasional_meds').update({stock:parseInt(val)||0,last_count:new Date().toISOString()}).eq('id',id).select().single();
-  if(data){APP.occMeds=APP.occMeds.map(m=>m.id===id?data:m);}
+  if(data)A.occMeds=A.occMeds.map(m=>m.id===id?data:m);
 }
 window.updateOccStock=updateOccStock;
 
-async function deleteDailyMed(id){
-  if(!confirm('Remove this medication?'))return;
-  await sb.from('daily_meds').delete().eq('id',id);
-  APP.dailyMeds=APP.dailyMeds.filter(m=>m.id!==id);showToast('Removed.');renderMeds();
-}
-window.deleteDailyMed=deleteDailyMed;
+async function delDM(id){if(!confirm('Remove?'))return;await sb.from('daily_meds').delete().eq('id',id);A.dailyMeds=A.dailyMeds.filter(m=>m.id!==id);toast('Removed.');renderMeds();}
+window.delDM=delDM;
+async function delOM(id){if(!confirm('Remove?'))return;await sb.from('occasional_meds').delete().eq('id',id);A.occMeds=A.occMeds.filter(m=>m.id!==id);toast('Removed.');renderMeds();}
+window.delOM=delOM;
 
-async function deleteOccMed(id){
-  if(!confirm('Remove this medication?'))return;
-  await sb.from('occasional_meds').delete().eq('id',id);
-  APP.occMeds=APP.occMeds.filter(m=>m.id!==id);showToast('Removed.');renderMeds();
-}
-window.deleteOccMed=deleteOccMed;
-
-function openAddDailyMed(){
+function openAddDM(){
   showModal('Add Daily Medication',`
-    <div class="form-row"><label class="lbl">Medication name</label><input class="inp" id="dm-name" placeholder="e.g. Vitamin D 1000IU"></div>
+    <div class="form-row"><label class="lbl">Medication name</label><input class="inp" id="dm-n" placeholder="e.g. Vitamin D 1000IU" autofocus></div>
     <div class="form-row"><label class="lbl">Members</label>
-      <div style="display:flex;gap:7px;flex-wrap:wrap" id="dm-members">
-        ${APP.members.map(m=>`<button type="button" onclick="toggleParticipant('${m.id}',this)" data-selected="false" style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;border:1.5px solid ${T.border};background:#fff;cursor:pointer;font-size:12px;font-weight:600;color:${T.muted}">${av(m,18)} ${m.name}</button>`).join('')}
-      </div>
-    </div>
-    <div class="grid2" style="margin-bottom:12px">
-      <div class="form-row" style="margin:0"><label class="lbl">Dose/day</label><input class="inp" type="number" id="dm-dose" value="1"></div>
-      <div class="form-row" style="margin:0"><label class="lbl">Units/pkg</label><input class="inp" type="number" id="dm-upkg" value="30"></div>
-      <div class="form-row" style="margin:0"><label class="lbl">Price/pkg</label><input class="inp" type="number" id="dm-price" value="0" step="0.01"></div>
-      <div class="form-row" style="margin:0"><label class="lbl">Stock today</label><input class="inp" type="number" id="dm-stock" value="0"></div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap" id="dm-mems">
+        ${A.members.map(m=>`<button type="button" data-mid="${m.id}" data-sel="false" onclick="togPart(this,'${m.id}')" style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;border:1.5px solid ${T.border};background:#fff;cursor:pointer;font-size:12px;font-weight:600;color:${T.muted}">${av(m,18)} ${m.name}</button>`).join('')}
+      </div></div>
+    <div class="grid2">
+      <div class="form-row" style="margin:0"><label class="lbl">Dose/day</label><input class="inp" type="number" id="dm-d" placeholder="1" onfocus="this.select()"></div>
+      <div class="form-row" style="margin:0"><label class="lbl">Units/pkg</label><input class="inp" type="number" id="dm-u" placeholder="30" onfocus="this.select()"></div>
+      <div class="form-row" style="margin:0"><label class="lbl">Price/pkg</label><input class="inp" type="number" id="dm-p" placeholder="0.00" step="0.01" onfocus="this.select()"></div>
+      <div class="form-row" style="margin:0"><label class="lbl">Stock today</label><input class="inp" type="number" id="dm-s" placeholder="0" onfocus="this.select()"></div>
     </div>
     <div class="form-row"><label class="lbl">Note</label><input class="inp" id="dm-note" placeholder="e.g. Take with food"></div>
-    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-bottom:14px;cursor:pointer">
-      <input type="checkbox" id="dm-shared"> Shared medication (multiple members share the same pack)
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-bottom:16px;cursor:pointer">
+      <input type="checkbox" id="dm-sh"> Shared pack (multiple members use same pack)
     </label>
-    <button class="btn btn-primary btn-full" onclick="saveDailyMed()">Add Medication</button>
-  `);
+    <button class="btn btn-primary btn-full" onclick="saveDM()">Add Medication</button>`);
 }
-window.openAddDailyMed=openAddDailyMed;
+window.openAddDM=openAddDM;
 
-async function saveDailyMed(){
-  if(!APP.family)return;
-  const memberIds=Array.from(document.querySelectorAll('#dm-members button[data-selected="true"]')).map(b=>{
-    const m=APP.members.find(m=>b.textContent.includes(m.name));return m?.id;
-  }).filter(Boolean);
+async function saveDM(){
+  if(!A.family)return;
+  const memberIds=Array.from(document.querySelectorAll('#dm-mems button[data-sel="true"]')).map(b=>b.dataset.mid).filter(Boolean);
+  const name=document.getElementById('dm-n')?.value?.trim();
+  if(!name){toast('Please add a name.',true);return;}
   const data={
-    family_id:APP.family.id,
-    name:document.getElementById('dm-name').value,
-    member_ids:memberIds,
-    dose_per_day:parseFloat(document.getElementById('dm-dose').value)||1,
-    units_per_pkg:parseInt(document.getElementById('dm-upkg').value)||30,
-    price_per_pkg:parseFloat(document.getElementById('dm-price').value)||0,
-    stock_today:parseInt(document.getElementById('dm-stock').value)||0,
-    shared:document.getElementById('dm-shared').checked,
-    note:document.getElementById('dm-note').value,
+    family_id:A.family.id,name,member_ids:memberIds,
+    dose_per_day:parseFloat(document.getElementById('dm-d')?.value)||1,
+    units_per_pkg:parseInt(document.getElementById('dm-u')?.value)||30,
+    price_per_pkg:parseFloat(document.getElementById('dm-p')?.value)||0,
+    stock_today:parseInt(document.getElementById('dm-s')?.value)||0,
+    shared:document.getElementById('dm-sh')?.checked||false,
+    note:document.getElementById('dm-note')?.value||'',
   };
-  const{data:result}=await sb.from('daily_meds').insert(data).select().single();
-  if(result){APP.dailyMeds.push(result);closeModal();showToast('Medication added!');renderMeds();}
+  const{data:result,error}=await sb.from('daily_meds').insert(data).select().single();
+  if(error){toast('Error adding medication.',true);console.error(error);return;}
+  A.dailyMeds.push(result);closeModal();toast('Medication added!');renderMeds();
 }
-window.saveDailyMed=saveDailyMed;
+window.saveDM=saveDM;
 
-function openAddOccMed(){
+function openAddOM(){
   showModal('Add Occasional Medication',`
-    <div class="form-row"><label class="lbl">Medication name</label><input class="inp" id="om-name" placeholder="e.g. Ibuprofen 400mg"></div>
-    <div class="grid2" style="margin-bottom:12px">
-      <div class="form-row" style="margin:0"><label class="lbl">Units in stock</label><input class="inp" type="number" id="om-stock" value="0"></div>
-      <div class="form-row" style="margin:0"><label class="lbl">Expiry date</label><input class="inp" type="date" id="om-expiry"></div>
+    <div class="form-row"><label class="lbl">Medication name</label><input class="inp" id="om-n" placeholder="e.g. Ibuprofen 400mg" autofocus></div>
+    <div class="grid2">
+      <div class="form-row" style="margin:0"><label class="lbl">Units in stock</label><input class="inp" type="number" id="om-s" placeholder="0" onfocus="this.select()"></div>
+      <div class="form-row" style="margin:0"><label class="lbl">Expiry date</label><input class="inp" type="date" id="om-e"></div>
     </div>
     <div class="form-row"><label class="lbl">Note</label><input class="inp" id="om-note" placeholder="Optional note"></div>
-    <button class="btn btn-primary btn-full" onclick="saveOccMed()">Add Medication</button>
-  `);
+    <button class="btn btn-primary btn-full" onclick="saveOM()">Add Medication</button>`);
 }
-window.openAddOccMed=openAddOccMed;
+window.openAddOM=openAddOM;
 
-async function saveOccMed(){
-  if(!APP.family)return;
+async function saveOM(){
+  if(!A.family)return;
+  const name=document.getElementById('om-n')?.value?.trim();
+  if(!name){toast('Please add a name.',true);return;}
   const data={
-    family_id:APP.family.id,
-    name:document.getElementById('om-name').value,
-    stock:parseInt(document.getElementById('om-stock').value)||0,
-    expiry:document.getElementById('om-expiry').value?new Date(document.getElementById('om-expiry').value).toISOString():null,
-    note:document.getElementById('om-note').value,
+    family_id:A.family.id,name,
+    stock:parseInt(document.getElementById('om-s')?.value)||0,
+    expiry:document.getElementById('om-e')?.value?new Date(document.getElementById('om-e').value).toISOString():null,
+    note:document.getElementById('om-note')?.value||'',
     last_count:new Date().toISOString(),
   };
-  const{data:result}=await sb.from('occasional_meds').insert(data).select().single();
-  if(result){APP.occMeds.push(result);closeModal();showToast('Medication added!');renderMeds();}
+  const{data:result,error}=await sb.from('occasional_meds').insert(data).select().single();
+  if(error){toast('Error adding.',true);console.error(error);return;}
+  A.occMeds.push(result);closeModal();toast('Medication added!');renderMeds();
 }
-window.saveOccMed=saveOccMed;
+window.saveOM=saveOM;
 
 // ── INSIGHTS ──────────────────────────────────────────────────────────────────
 function renderInsights(){
-  const wLogs=APP.events.filter(e=>e.type==='wellness');
-  const hEvs=APP.events.filter(e=>e.type==='health');
+  const wLogs=A.events.filter(e=>e.type==='wellness');
+  const hEvs=A.events.filter(e=>e.type==='health');
   const avg=(arr,k)=>{const v=arr.map(e=>parseFloat(e[k])).filter(v=>!isNaN(v)&&v>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;};
-  const challenge=genChallenge(wLogs);
+
+  // Pick challenge based on week number
+  const weekNum=Math.floor((new Date()-new Date(new Date().getFullYear(),0,1))/(7*24*60*60*1000));
+  const challenge=CHALLENGES[weekNum%CHALLENGES.length];
   const insights=genInsights(wLogs,hEvs);
 
-  const memberCards=APP.members.map(member=>{
+  const memberCards=A.members.map(member=>{
     const logs=wLogs.filter(e=>e.member_id===member.id);
     if(!logs.length)return'';
     const aSlp=avg(logs,'sleep'),aEn=avg(logs,'energy'),aHy=avg(logs,'hydration');
@@ -1213,22 +1143,21 @@ function renderInsights(){
     const ill=hEvs.filter(e=>(e.participants||[]).includes(member.id)&&e.appt_type==='Illness').length;
     return`<div class="card" style="margin-bottom:12px;overflow:hidden">
       <div style="padding:12px 14px;border-bottom:1px solid ${T.border};display:flex;align-items:center;gap:10px">
-        ${av(member,36)}
-        <div><div style="font-weight:800;font-size:14px">${member.name}</div><div style="font-size:11px;color:${T.muted}">${logs.length} logs</div></div>
+        ${av(member,36)}<div><div style="font-weight:800;font-size:14px">${member.name}</div><div style="font-size:11px;color:${T.muted}">${logs.length} logs recorded</div></div>
       </div>
-      <div style="padding:12px 14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <div style="padding:12px 14px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
         ${[['😴','Sleep',aSlp?`${aSlp.toFixed(1)}h`:'-',aSlp&&aSlp>=7,aSlp&&aSlp<6],
            ['⚡','Energy',aEn?`${Math.round(aEn)}%`:'-',aEn&&aEn>=70,aEn&&aEn<50],
            ['💧','H₂O',aHy?`${Math.round(aHy)}ml`:'-',aHy&&aHy>=1800,aHy&&aHy<1200],
            ['🏃','Exercise',`${exDays}/${logs.length}`,exDays/Math.max(logs.length,1)>=0.5,false]
         ].map(([ic,lb,val,good,warn])=>`
           <div style="background:${good?T.sageLight:warn?T.roseLight:T.parchment};border-radius:9px;padding:7px 8px;text-align:center">
-            <div style="font-size:14px">${ic}</div>
+            <div style="font-size:15px">${ic}</div>
             <div style="font-size:12px;font-weight:800;color:${good?T.sage:warn?T.rose:T.ink}">${val}</div>
             <div style="font-size:9px;color:${T.muted};font-weight:700;text-transform:uppercase">${lb}</div>
           </div>`).join('')}
-        ${topAct?`<div style="background:${T.parchment};border-radius:9px;padding:7px 8px;text-align:center"><div style="font-size:14px">🏅</div><div style="font-size:12px;font-weight:800;color:${T.ink}">${topAct}</div><div style="font-size:9px;color:${T.muted};font-weight:700;text-transform:uppercase">Top Activity</div></div>`:''}
-        ${ill>0?`<div style="background:${T.roseLight};border-radius:9px;padding:7px 8px;text-align:center"><div style="font-size:14px">🤒</div><div style="font-size:12px;font-weight:800;color:${T.rose}">${ill}</div><div style="font-size:9px;color:${T.muted};font-weight:700;text-transform:uppercase">Illnesses</div></div>`:''}
+        ${topAct?`<div style="background:${T.parchment};border-radius:9px;padding:7px 8px;text-align:center"><div style="font-size:15px">🏅</div><div style="font-size:12px;font-weight:800;color:${T.ink}">${topAct}</div><div style="font-size:9px;color:${T.muted};font-weight:700;text-transform:uppercase">Top Activity</div></div>`:''}
+        ${ill>0?`<div style="background:${T.roseLight};border-radius:9px;padding:7px 8px;text-align:center"><div style="font-size:15px">🤒</div><div style="font-size:12px;font-weight:800;color:${T.rose}">${ill}</div><div style="font-size:9px;color:${T.muted};font-weight:700;text-transform:uppercase">Illnesses</div></div>`:''}
       </div>
       ${aSlp?`<div style="padding:0 14px 12px">
         <div style="font-size:10px;color:${T.muted};font-weight:700;margin-bottom:3px">Sleep vs 8h goal</div>
@@ -1241,17 +1170,18 @@ function renderInsights(){
 
   document.getElementById('page-insights').innerHTML=`
     <div class="page-header">
-      <div class="family-label">${APP.family?.name||''}</div>
+      <div class="family-label">${A.family?.name||''}</div>
       <div class="page-title">Insights</div>
     </div>
     <div style="padding:12px 16px 0">
       <div style="background:linear-gradient(135deg,${T.sage},${T.sageMid});border-radius:17px;padding:18px;margin-bottom:16px;color:#fff;position:relative;overflow:hidden">
         <div style="position:absolute;right:-10px;top:-10px;font-size:68px;opacity:.12">🌿</div>
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;opacity:.8;margin-bottom:5px">Weekend Challenge</div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;opacity:.8;margin-bottom:5px">This Week's Family Challenge</div>
         <div style="font-family:'Playfair Display',serif;font-size:18px;margin-bottom:8px;line-height:1.3">${challenge.title}</div>
         <div style="font-size:13px;opacity:.9;line-height:1.6;margin-bottom:10px">${challenge.body}</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">${challenge.tips.map(t=>`<span style="background:rgba(255,255,255,.2);border-radius:99px;padding:3px 10px;font-size:11px;font-weight:600">💡 ${t}</span>`).join('')}</div>
       </div>
+
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
         ${[{l:'Wellness Logs',v:wLogs.length,ic:'📋',c:T.sage,bg:T.sageLight},
            {l:'Health Events',v:hEvs.length,ic:'❤️',c:T.rose,bg:T.roseLight},
@@ -1263,15 +1193,14 @@ function renderInsights(){
           <div style="font-size:10px;color:${T.muted};font-weight:700;text-transform:uppercase;letter-spacing:.04em">${s.l}</div>
         </div>`).join('')}
       </div>
+
       ${wLogs.length===0?`<div class="card" style="padding:20px;text-align:center;color:${T.muted};margin-bottom:16px">
         <div style="font-size:32px;margin-bottom:8px">🌿</div>
         <div style="font-weight:700;margin-bottom:5px">No wellness data yet</div>
-        <div style="font-size:13px">Start adding Wellness Logs in the Calendar to see personalised insights here.</div>
-      </div>`:`
-        <div style="font-family:'Playfair Display',serif;font-size:17px;margin-bottom:12px">Per Member</div>
-        ${memberCards}
-      `}
-      <div style="font-family:'Playfair Display',serif;font-size:17px;margin-bottom:12px">Observations</div>
+        <div style="font-size:13px">Add Wellness Logs in the Calendar to see personalised insights here.</div>
+      </div>`:memberCards}
+
+      <div style="font-family:'Playfair Display',serif;font-size:17px;color:${T.ink};margin-bottom:12px">Smart Observations</div>
       ${insights.map(ins=>`<div class="card" style="padding:12px 14px;margin-bottom:10px;border-left:4px solid ${ins.color}">
         <div style="font-size:16px;margin-bottom:3px">${ins.icon}</div>
         <div style="font-weight:700;font-size:13px;margin-bottom:2px">${ins.title}</div>
@@ -1280,54 +1209,44 @@ function renderInsights(){
     </div>`;
 }
 
-function genChallenge(logs){
-  const aHy=logs.length?logs.map(l=>parseFloat(l.hydration)||0).reduce((a,b)=>a+b,0)/logs.length:1500;
-  const exPct=logs.length?logs.filter(l=>l.exercised).length/logs.length:0;
-  const aSlp=logs.length?logs.map(l=>parseFloat(l.sleep)||0).reduce((a,b)=>a+b,0)/logs.length:7;
-  if(aHy<1400) return{title:'The Hydration Weekend 💧',body:'Everyone challenges themselves to drink at least 1.5 litres of water each day. A small habit with a big impact on energy and mood!',tips:['Set hourly reminders','Add fruit to water','Glass of water right when you wake up']};
-  if(exPct<0.4) return{title:'Family Active Weekend 🏃',body:'Plan one outdoor activity as a family — a 30-minute walk, a bike ride, or a dance-off all count. Moving together is the goal!',tips:['Pick something everyone enjoys','Even 20 minutes counts','Celebrate with a healthy treat']};
-  if(aSlp<7) return{title:'Rest & Recharge Weekend 😴',body:'This weekend, aim to be in bed 30 minutes earlier than usual. Great sleep makes everything easier — mood, energy, immunity.',tips:['No screens 1hr before bed','Same bedtime for everyone','Try chamomile tea']};
-  return{title:'Mindful Family Weekend 🌿',body:"You're doing great! This weekend: share one thing you're grateful for at dinner. A small ritual that strengthens bonds and lifts everyone's mood.",tips:['Keep it simple','Let kids go first','Write it in the Notebook!']};
-}
-
 function genInsights(wLogs,hEvs){
   const ins=[];
   const avg=(arr,k)=>{const v=arr.map(e=>parseFloat(e[k])).filter(v=>!isNaN(v)&&v>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;};
-  APP.members.forEach(m=>{
+  A.members.forEach(m=>{
     const logs=wLogs.filter(e=>e.member_id===m.id);
     if(logs.length<2)return;
     const aSlp=avg(logs,'sleep'),aHy=avg(logs,'hydration'),aEn=avg(logs,'energy');
     const exPct=logs.filter(l=>l.exercised).length/logs.length;
-    if(aSlp&&aSlp<7) ins.push({icon:'😴',title:`${m.name} is sleeping less than recommended`,body:`Average sleep is ${aSlp.toFixed(1)}h — the goal is 7–9h. Even 30 extra minutes can improve mood and energy significantly!`,color:T.honey});
-    if(aHy&&aHy<1500) ins.push({icon:'💧',title:`${m.name} could drink more water`,body:`Average hydration is ${Math.round(aHy)}ml/day. Aim for 1800ml+. A visible water bottle nearby is a surprisingly effective habit.`,color:T.sky});
-    if(exPct<0.3&&logs.length>=3) ins.push({icon:'🏃',title:`${m.name}'s exercise consistency has room to grow`,body:`Only ${Math.round(exPct*100)}% of logged days included exercise. Even a 15-minute walk makes a real difference!`,color:T.sage});
-    if(aEn&&aEn<55) ins.push({icon:'⚡',title:`${m.name}'s energy levels seem low`,body:`Average energy is ${Math.round(aEn)}%. This often links to sleep or hydration — two quick wins if improved together.`,color:T.plum});
+    if(aSlp&&aSlp<7)ins.push({icon:'😴',title:`${m.name} is sleeping less than recommended`,body:`Average sleep is ${aSlp.toFixed(1)}h — the goal is 7–9h. Even 30 extra minutes can improve mood and energy significantly!`,color:T.honey});
+    if(aHy&&aHy<1500)ins.push({icon:'💧',title:`${m.name} could drink more water`,body:`Average hydration is ${Math.round(aHy)}ml/day. Aim for 1800ml+. A visible water bottle nearby is a surprisingly effective habit.`,color:T.sky});
+    if(exPct<0.3&&logs.length>=3)ins.push({icon:'🏃',title:`${m.name}'s exercise consistency has room to grow`,body:`Only ${Math.round(exPct*100)}% of logged days included exercise. Even a 15-minute walk makes a real difference!`,color:T.sage});
+    if(aEn&&aEn<55)ins.push({icon:'⚡',title:`${m.name}'s energy levels seem low`,body:`Average energy is ${Math.round(aEn)}%. This often links to sleep or hydration — two quick wins if improved together.`,color:T.plum});
   });
   const ill=hEvs.filter(e=>e.appt_type==='Illness');
-  if(ill.length>=2) ins.push({icon:'🤒',title:`${ill.length} illness events recorded`,body:`Worth checking if these are recurring for the same person. Vitamin D, zinc and consistent sleep all support immunity.`,color:T.rose});
-  if(!ins.length) ins.push({icon:'🌟',title:'Looking great overall!',body:'No major concerns in your family\'s wellness data. Keep logging consistently for richer, more personalised insights over time.',color:T.sage});
+  if(ill.length>=2)ins.push({icon:'🤒',title:`${ill.length} illness events recorded`,body:`Worth checking if these are recurring for the same person. Vitamin D, zinc, and consistent sleep all support immunity.`,color:T.rose});
+  if(!ins.length)ins.push({icon:'🌟',title:'Looking great overall!',body:"No major concerns in your family's wellness data. Keep logging consistently for richer, more personalised insights over time.",color:T.sage});
   return ins;
 }
 
 // ── SETTINGS ──────────────────────────────────────────────────────────────────
 function renderSettings(){
-  const fam=APP.family, members=APP.members;
-  const TABS=[{id:'family',label:'👨‍👩‍👧‍👦 Family'},{id:'calendar',label:'🗓 Calendar'},{id:'notifs',label:'🔔 Notifications'},{id:'ideas',label:'💡 Ideas'}];
+  const fam=A.family,members=A.members;
+  const TABS=[{id:'family',label:'👨‍👩‍👧‍👦 Family'},{id:'calendar',label:'🗓 Calendar'},{id:'notifs',label:'🔔 Notifications'}];
+  let tc='';
 
-  let tabContent='';
-  if(APP.settingsTab==='family'){
-    tabContent=`
+  if(A.settingsTab==='family'){
+    tc=`
       <div class="card" style="padding:14px;margin-bottom:12px">
-        <div class="lbl" style="margin-bottom:10px">Family Name</div>
+        <div class="lbl" style="margin-bottom:8px">Family Name</div>
         <div style="display:flex;gap:8px">
-          <input class="inp" id="s-fname" value="${fam?.name||''}" style="flex:1;font-size:15px;font-weight:700">
-          <button class="btn btn-primary btn-sm" onclick="saveFamilyName()">Save</button>
+          <input class="inp" id="s-fn" value="${fam?.name||''}" style="flex:1;font-size:15px;font-weight:700" placeholder="Family name">
+          <button class="btn btn-primary btn-sm" onclick="saveFamName()">Save</button>
         </div>
       </div>
       <div class="card" style="padding:14px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <div class="lbl">Family Members</div>
-          <button class="btn btn-primary btn-sm" onclick="openAddMember()">+ Add</button>
+          <button class="btn btn-primary btn-sm" onclick="openAddMem()">+ Add Member</button>
         </div>
         ${members.map(m=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid ${T.border}">
           ${av(m,40)}
@@ -1336,44 +1255,36 @@ function renderSettings(){
             <div style="font-size:12px;color:${T.muted}">${m.role||''}${m.age?` · Age ${m.age}`:''}${m.gender?` · ${m.gender}`:''}</div>
             ${m.email?`<div style="font-size:11px;color:${T.sky}">${m.email}</div>`:''}
           </div>
-          ${m.email&&m.user_id!==APP.user?.id?`<button onclick="sendInvite('${m.email}','${m.id}')" class="btn btn-primary btn-sm">📧 Invite</button>`:''}
-          ${m.is_owner?`<span class="chip" style="background:${T.sageLight};color:${T.sage}">Owner</span>`:''}
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+            ${m.is_owner?`<span class="chip" style="background:${T.sageLight};color:${T.sage}">Owner</span>`:''}
+            ${m.email&&!m.user_id?`<button onclick="sendInvite('${m.email}','${m.id}')" class="btn btn-primary btn-sm">📧 Invite</button>`:''}
+          </div>
         </div>`).join('')}
       </div>`;
-  } else if(APP.settingsTab==='calendar'){
-    tabContent=`<div class="card" style="padding:14px">
+  } else if(A.settingsTab==='calendar'){
+    tc=`<div class="card" style="padding:14px">
       <div class="lbl" style="margin-bottom:10px">Custom Tags</div>
+      <p style="font-size:12px;color:${T.muted};margin-bottom:12px">These tags appear when creating calendar entries, letting you quickly categorise and search events.</p>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
         ${(fam?.tags||[]).map(t=>`<div style="display:flex;align-items:center;gap:4px;background:${T.sageLight};border-radius:99px;padding:4px 10px">
           <span style="font-size:13px;font-weight:600;color:${T.sage}">${t}</span>
-          <button onclick="removeTag('${t}')" style="background:none;border:none;color:${T.sageMid};font-size:14px;cursor:pointer;line-height:1">×</button>
+          <button onclick="removeTag('${t}')" style="background:none;border:none;color:${T.sageMid};font-size:14px;cursor:pointer;line-height:1;padding:0 2px">×</button>
         </div>`).join('')}
       </div>
       <div style="display:flex;gap:8px">
-        <input class="inp" id="s-newtag" placeholder="Add tag…" style="flex:1" onkeydown="if(event.key==='Enter')addTag()">
-        <button class="btn btn-primary btn-sm" onclick="addTag()">Add</button>
+        <input class="inp" id="s-tag" placeholder="Add new tag…" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addFamTag();}">
+        <button class="btn btn-primary btn-sm" onclick="addFamTag()">Add</button>
       </div>
     </div>`;
-  } else if(APP.settingsTab==='notifs'){
-    tabContent=`<div class="card" style="padding:14px">
+  } else {
+    tc=`<div class="card" style="padding:14px">
       <div class="lbl" style="margin-bottom:12px">Reminder Timing</div>
       ${[['notif_week_before','1 week before'],['notif_day_before','1 day before'],['notif_hour_before','1 hour before'],['notif_ten_min','10 minutes before']].map(([key,label])=>`
         <label style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid ${T.border};cursor:pointer">
           <input type="checkbox" ${fam?.[key]?'checked':''} onchange="updateNotif('${key}',this.checked)">
           <span style="font-size:14px;font-weight:600">${label}</span>
         </label>`).join('')}
-      <p style="font-size:12px;color:${T.muted};margin-top:12px;line-height:1.5">Push notifications will be available in the native mobile app.</p>
-    </div>`;
-  } else {
-    tabContent=`<div class="card" style="padding:14px">
-      <div class="lbl" style="margin-bottom:12px">💡 Ideas Parked for Later</div>
-      ${[{t:'Multiple Families Support',d:'Allow users to belong to or collaborate with multiple family groups (e.g. grandparents). Requires thinking through permission levels — view-only vs full access.'},
-         {t:'Collaborator Role',d:'A lighter access mode for extended family — they see calendar busyness without private event details.'},
-         {t:'Family-to-Family Visibility',d:'Events with a "shared with extended family" flag, visible across connected families.'}
-      ].map((idea,i,arr)=>`<div style="padding:12px 0;${i<arr.length-1?`border-bottom:1px solid ${T.border}`:''}">
-        <div style="font-weight:700;margin-bottom:4px">💭 ${idea.t}</div>
-        <div style="font-size:13px;color:${T.muted};line-height:1.5">${idea.d}</div>
-      </div>`).join('')}
+      <p style="font-size:12px;color:${T.muted};margin-top:12px;line-height:1.5">Push notifications are available in the native mobile app. Settings are saved and will apply when the app launches.</p>
     </div>`;
   }
 
@@ -1382,148 +1293,141 @@ function renderSettings(){
       <div class="family-label">${fam?.name||''}</div>
       <div class="page-title">Settings</div>
     </div>
-    <div class="tabs">
-      ${TABS.map(t=>`<button class="tab ${APP.settingsTab===t.id?'active':''}" onclick="APP.settingsTab='${t.id}';renderSettings()">${t.label}</button>`).join('')}
-    </div>
-    <div style="padding:14px 16px">${tabContent}</div>`;
+    <div class="tabs">${TABS.map(t=>`<button class="tab ${A.settingsTab===t.id?'active':''}" onclick="A.settingsTab='${t.id}';renderSettings()">${t.label}</button>`).join('')}</div>
+    <div style="padding:14px 16px">${tc}</div>`;
 }
 
-async function saveFamilyName(){
-  const name=document.getElementById('s-fname')?.value?.trim();
-  if(!name||!APP.family)return;
-  const{data}=await sb.from('families').update({name}).eq('id',APP.family.id).select().single();
-  if(data){APP.family=data;document.getElementById('family-name-badge').textContent=data.name;showToast('Family name saved!');renderSettings();}
+async function saveFamName(){
+  const name=document.getElementById('s-fn')?.value?.trim();
+  if(!name||!A.family){toast('Please enter a family name.',true);return;}
+  const{data,error}=await sb.from('families').update({name}).eq('id',A.family.id).select().single();
+  if(error){toast('Error saving.',true);console.error(error);return;}
+  A.family=data;
+  document.getElementById('fam-badge').textContent=data.name;
+  toast('Family name saved! ✅');renderSettings();
 }
-window.saveFamilyName=saveFamilyName;
+window.saveFamName=saveFamName;
 
-async function addTag(){
-  const inp=document.getElementById('s-newtag');
+async function addFamTag(){
+  const inp=document.getElementById('s-tag');
   const val=inp?.value?.trim().toLowerCase();
-  if(!val||!APP.family)return;
-  const tags=[...new Set([...(APP.family.tags||[]),val])];
-  const{data}=await sb.from('families').update({tags}).eq('id',APP.family.id).select().single();
-  if(data){APP.family=data;renderSettings();}
+  if(!val||!A.family){return;}
+  const tags=[...new Set([...(A.family.tags||[]),val])];
+  const{data,error}=await sb.from('families').update({tags}).eq('id',A.family.id).select().single();
+  if(error){toast('Error saving tag.',true);console.error(error);return;}
+  A.family=data;toast('Tag added!');renderSettings();
 }
-window.addTag=addTag;
+window.addFamTag=addFamTag;
 
 async function removeTag(tag){
-  if(!APP.family)return;
-  const tags=(APP.family.tags||[]).filter(t=>t!==tag);
-  const{data}=await sb.from('families').update({tags}).eq('id',APP.family.id).select().single();
-  if(data){APP.family=data;renderSettings();}
+  if(!A.family)return;
+  const tags=(A.family.tags||[]).filter(t=>t!==tag);
+  const{data,error}=await sb.from('families').update({tags}).eq('id',A.family.id).select().single();
+  if(error){toast('Error removing tag.',true);return;}
+  A.family=data;renderSettings();
 }
 window.removeTag=removeTag;
 
 async function updateNotif(key,val){
-  if(!APP.family)return;
-  await sb.from('families').update({[key]:val}).eq('id',APP.family.id);
-  APP.family[key]=val;
+  if(!A.family)return;
+  const{data,error}=await sb.from('families').update({[key]:val}).eq('id',A.family.id).select().single();
+  if(error){toast('Error saving.',true);console.error(error);return;}
+  A.family=data;toast('Saved!');
 }
 window.updateNotif=updateNotif;
 
-function openAddMember(){
+function openAddMem(){
   showModal('Add Family Member',`
-    <div class="grid2" style="margin-bottom:12px">
-      <div class="form-row" style="margin:0"><label class="lbl">Name</label><input class="inp" id="nm-name" placeholder="Name"></div>
-      <div class="form-row" style="margin:0"><label class="lbl">Role</label><input class="inp" id="nm-role" placeholder="Parent, Child…"></div>
-      <div class="form-row" style="margin:0"><label class="lbl">Age</label><input class="inp" type="number" id="nm-age"></div>
+    <div class="grid2">
+      <div class="form-row" style="margin:0"><label class="lbl">Name *</label><input class="inp" id="nm-n" placeholder="Name" autofocus></div>
+      <div class="form-row" style="margin:0"><label class="lbl">Role</label><input class="inp" id="nm-r" placeholder="Parent, Child…"></div>
+      <div class="form-row" style="margin:0"><label class="lbl">Age</label><input class="inp" type="number" id="nm-a" placeholder="Age" onfocus="this.select()"></div>
       <div class="form-row" style="margin:0"><label class="lbl">Gender</label>
-        <select class="sel" id="nm-gender"><option value="">Select</option>${['Male','Female','Non-binary','Prefer not to say'].map(g=>`<option>${g}</option>`).join('')}</select>
+        <select class="sel" id="nm-g"><option value="">Select</option>${['Male','Female','Non-binary','Prefer not to say'].map(g=>`<option>${g}</option>`).join('')}</select>
       </div>
     </div>
-    <div class="form-row"><label class="lbl">Email (for invite)</label><input class="inp" type="email" id="nm-email" placeholder="their@email.com"></div>
-    <div style="display:flex;gap:6px;margin-bottom:14px;align-items:center">
-      <span class="lbl" style="margin:0">Color:</span>
-      ${MEMBER_COLORS.map((c,i)=>`<div onclick="document.querySelectorAll('.mc-swatch').forEach(s=>s.style.border='2px solid transparent');this.style.border='3px solid ${T.ink}';document.getElementById('nm-color').value='${c}'" class="mc-swatch" style="width:24px;height:24px;border-radius:50%;background:${c};cursor:pointer;border:${i===0?'3px solid '+T.ink:'2px solid transparent'}"></div>`).join('')}
-      <input type="hidden" id="nm-color" value="${MEMBER_COLORS[0]}">
+    <div class="form-row"><label class="lbl">Email (for invite)</label><input class="inp" type="email" id="nm-e" placeholder="their@email.com"></div>
+    <div style="display:flex;gap:6px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+      <span class="lbl" style="margin:0">Colour:</span>
+      ${MCOLORS.map((c,i)=>`<div onclick="document.querySelectorAll('.mcs').forEach(s=>s.style.outline='none');this.style.outline='3px solid ${T.ink}';document.getElementById('nm-c').value='${c}'" class="mcs" style="width:26px;height:26px;border-radius:50%;background:${c};cursor:pointer;outline:${i===0?'3px solid '+T.ink:'none'};outline-offset:2px"></div>`).join('')}
+      <input type="hidden" id="nm-c" value="${MCOLORS[0]}">
     </div>
-    <button class="btn btn-primary btn-full" onclick="saveNewMember()">Add Member</button>
-  `);
+    <button class="btn btn-primary btn-full" onclick="saveMem()">Add Member</button>
+    <p style="font-size:12px;color:${T.muted};margin-top:10px;text-align:center">If you add an email, you'll be able to send them an invite to join your family hub.</p>`);
 }
-window.openAddMember=openAddMember;
+window.openAddMem=openAddMem;
 
-async function saveNewMember(){
-  if(!APP.family)return;
-  const name=document.getElementById('nm-name').value.trim();
-  if(!name){showToast('Please add a name.',true);return;}
+async function saveMem(){
+  if(!A.family)return;
+  const name=document.getElementById('nm-n')?.value?.trim();
+  if(!name){toast('Please add a name.',true);return;}
+  const email=document.getElementById('nm-e')?.value?.trim()||null;
   const data={
-    family_id:APP.family.id,
-    name,
-    role:document.getElementById('nm-role').value,
-    age:parseInt(document.getElementById('nm-age').value)||null,
-    gender:document.getElementById('nm-gender').value||null,
-    email:document.getElementById('nm-email').value||null,
-    color:document.getElementById('nm-color').value,
-    avatar:name[0].toUpperCase(),
-    is_owner:false,
+    family_id:A.family.id,name,
+    role:document.getElementById('nm-r')?.value||'',
+    age:parseInt(document.getElementById('nm-a')?.value)||null,
+    gender:document.getElementById('nm-g')?.value||null,
+    email,color:document.getElementById('nm-c')?.value||MCOLORS[0],
+    avatar:name[0].toUpperCase(),is_owner:false,
   };
-  const{data:result}=await sb.from('family_members').insert(data).select().single();
-  if(result){
-    APP.members.push(result);
-    closeModal();showToast('Member added!');
-    // Offer to send invite
-    if(result.email){
-      if(confirm(`Send an email invite to ${result.email}?`)) sendInvite(result.email,result.id);
-    }
-    renderSettings();
-  }
+  const{data:result,error}=await sb.from('family_members').insert(data).select().single();
+  if(error){toast('Error adding member.',true);console.error(error);return;}
+  A.members.push(result);
+  closeModal();toast(`${name} added! ✅`);
+  if(email&&confirm(`Send an invite to ${email} to join ${A.family.name}?`))sendInvite(email,result.id);
+  else renderSettings();
 }
-window.saveNewMember=saveNewMember;
+window.saveMem=saveMem;
 
-async function sendInvite(email, memberId){
-  if(!APP.family)return;
-  // Create invitation record
-  const{data}=await sb.from('invitations').insert({family_id:APP.family.id,email}).select().single();
-  if(data){
-    // In production, trigger an email via Supabase Edge Function
-    // For now, show the invite link
-    const link=`${window.location.origin}${window.location.pathname}?invite=${data.token}`;
-    showModal('Invite Sent 📧',`
-      <div style="text-align:center;margin-bottom:16px">
-        <div style="font-size:40px;margin-bottom:10px">📧</div>
-        <div style="font-weight:700;font-size:16px;margin-bottom:6px">Invite link created!</div>
-        <div style="font-size:13px;color:${T.muted};margin-bottom:14px">Share this link with <b>${email}</b> to give them access to <b>${APP.family.name}</b>.</div>
-        <div style="background:${T.parchment};border-radius:9px;padding:10px;font-size:12px;word-break:break-all;color:${T.ink};margin-bottom:14px">${link}</div>
-        <button class="btn btn-primary btn-full" onclick="navigator.clipboard.writeText('${link}').then(()=>showToast('Link copied!'))">📋 Copy invite link</button>
-      </div>
-      <div style="font-size:12px;color:${T.muted};text-align:center">In the full production app, this would be sent automatically by email.</div>
-    `);
-  }
+async function sendInvite(email,memberId){
+  if(!A.family)return;
+  const{data,error}=await sb.from('invitations').insert({family_id:A.family.id,email}).select().single();
+  if(error){console.error('Invite error',error);}
+  const token=data?.token||'demo';
+  const link=`${window.location.origin}${window.location.pathname}?invite=${token}`;
+  showModal('Invite Sent 📧',`
+    <div style="text-align:center;padding:10px 0">
+      <div style="font-size:42px;margin-bottom:12px">📧</div>
+      <div style="font-weight:700;font-size:16px;margin-bottom:8px">Invite link ready!</div>
+      <div style="font-size:13px;color:${T.muted};margin-bottom:14px">Share this link with <b>${email}</b> to give them access to <b>${A.family.name}</b>.</div>
+      <div style="background:${T.parchment};border-radius:9px;padding:10px;font-size:11px;word-break:break-all;color:${T.ink};margin-bottom:14px;text-align:left">${link}</div>
+      <button class="btn btn-primary btn-full" onclick="navigator.clipboard?.writeText('${link}').then(()=>toast('Link copied! 📋'))">📋 Copy invite link</button>
+      <div style="font-size:11px;color:${T.muted};margin-top:12px">In the full app, this will be sent automatically by email.</div>
+    </div>`);
 }
 window.sendInvite=sendInvite;
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────
-function boot() {
-  try {
-    const urlParams = new URLSearchParams(window.location.search);
-    const inviteToken = urlParams.get('invite');
-    if(inviteToken) sessionStorage.setItem('kinship_invite', inviteToken);
-    sb.auth.onAuthStateChange(async (event, session) => {
-      try {
-        if(session?.user){
-          document.getElementById('auth-screen').style.display='none';
-          await initApp(session.user);
-        } else {
-          document.getElementById('loading-screen').style.display='none';
-          document.getElementById('root').style.display='none';
-          document.getElementById('auth-screen').style.display='flex';
-        }
-      } catch(err) {
-        console.error('Auth state error:', err);
+function boot(){
+  if(!sb){
+    document.getElementById('loading-screen').innerHTML=`<div style="text-align:center;padding:40px;font-family:sans-serif">
+      <div style="font-size:40px;margin-bottom:16px">⚠️</div>
+      <div style="font-size:16px;font-weight:700;margin-bottom:8px">Failed to connect</div>
+      <div style="font-size:13px;color:#7a7060;margin-bottom:16px">Could not initialise the database connection.</div>
+      <button onclick="location.reload()" style="padding:10px 20px;background:#5e8b62;color:#fff;border:none;border-radius:10px;font-size:14px;cursor:pointer">Retry</button>
+    </div>`;
+    return;
+  }
+  sb.auth.onAuthStateChange(async(event,session)=>{
+    try{
+      if(session?.user){
+        document.getElementById('auth-screen').style.display='none';
+        await initApp(session.user);
+      } else {
         document.getElementById('loading-screen').style.display='none';
+        document.getElementById('root').style.display='none';
         document.getElementById('auth-screen').style.display='flex';
       }
-    });
-  } catch(err) {
-    console.error('Boot error:', err);
-    document.getElementById('loading-screen').innerHTML = '<div style="text-align:center;padding:40px"><div style="font-size:40px;margin-bottom:16px">⚠️</div><div style="font-size:16px;font-weight:700;margin-bottom:8px">Something went wrong</div><div style="font-size:13px;color:#7a7060">' + err.message + '</div><button onclick="location.reload()" style="margin-top:16px;padding:10px 20px;background:#5e8b62;color:#fff;border:none;border-radius:10px;font-size:14px;cursor:pointer">Retry</button></div>';
-  }
+    }catch(e){
+      console.error('Auth error',e);
+      document.getElementById('loading-screen').style.display='none';
+      document.getElementById('auth-screen').style.display='flex';
+    }
+  });
 }
-if(document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', boot);
-} else {
-  boot();
-}
+
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);
+else boot();
 </script>
 </body>
 </html>
