@@ -152,8 +152,8 @@ try { sb = supabase.createClient(SB_URL, SB_KEY); } catch(e) { console.error('Su
 const T={sage:'#5e8b62',sageMid:'#8ab88e',sageLight:'#d4e8d6',terra:'#b85c38',terraLight:'#f2ddd4',sky:'#3a7ca5',skyLight:'#d0e4f0',plum:'#7c5c8a',plumLight:'#e8d8f0',honey:'#c4892a',honeyLight:'#f5e4c4',rose:'#b85070',roseLight:'#f0d4de',ink:'#1e1b16',muted:'#7a7060',border:'#e0d8cc',bg:'#f5f2ed',surface:'#fff',parchment:'#ede8df'};
 const ET={social:{label:'Social Event',icon:'🎉',color:T.sky,bg:T.skyLight,desc:'Gatherings, outings, celebrations'},health:{label:'Health Event',icon:'❤️',color:T.rose,bg:T.roseLight,desc:'Appointments, treatments, check-ups'},wellness:{label:'Wellness Log',icon:'🌿',color:T.sage,bg:T.sageLight,desc:'Daily health summary — sleep, mood, exercise'},task:{label:'Task',icon:'✅',color:T.honey,bg:T.honeyLight,desc:'To-dos assigned to family members'}};
 const MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
-const DN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-const DNF=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const DN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const DNF=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const MOODS=['😄 Great','😊 Good','😐 Okay','😔 Low','😢 Sad','😤 Stressed','😴 Tired'];
 const MCOLORS=[T.sage,T.terra,T.sky,T.plum,T.honey,T.rose];
 const CURRENCIES=[{code:'EUR',sym:'€'},{code:'USD',sym:'$'},{code:'GBP',sym:'£'},{code:'RON',sym:'lei'},{code:'CHF',sym:'CHF'},{code:'CAD',sym:'CA$'},{code:'AUD',sym:'A$'},{code:'JPY',sym:'¥'},{code:'BRL',sym:'R$'},{code:'INR',sym:'₹'},{code:'SEK',sym:'kr'},{code:'NOK',sym:'kr'},{code:'DKK',sym:'kr'},{code:'PLN',sym:'zł'},{code:'HUF',sym:'Ft'},{code:'AED',sym:'د.إ'},{code:'SGD',sym:'S$'},{code:'HKD',sym:'HK$'}];
@@ -391,7 +391,9 @@ function renderOB(){
 // ── CALENDAR ──────────────────────────────────────────────────────────────────
 function renderCal(){
   const vY=A.calDate.getFullYear(),vM=A.calDate.getMonth();
-  const firstDay=new Date(vY,vM,1).getDay();
+  // Monday-first: shift getDay() so Monday=0, Sunday=6
+  const rawFirst=new Date(vY,vM,1).getDay();
+  const firstDay=(rawFirst+6)%7;
   const dIM=new Date(vY,vM+1,0).getDate();
   const cells=Array.from({length:Math.ceil((firstDay+dIM)/7)*7},(_,i)=>{const d=i-firstDay+1;return d>=1&&d<=dIM?d:null;});
 
@@ -415,24 +417,25 @@ function renderCal(){
         const isT=isSameDay(new Date(vY,vM,d),todayD());
         const de=evOnDay(d);
         const shortT=e=>{const t=e.title||ET[e.type].label;const s=t.replace(/\s*[-–]\s*Wellness Log$/i,'').replace(/^Wellness Log$/i,'Log');return s.length>8?s.substring(0,7)+'…':s;};
+        const pillC=e=>{const mid=e.member_id||(e.participants&&e.participants[0]);const mem=A.members.find(m=>m.id===mid);return mem?mem.color:ET[e.type].color;};
         return`<div onclick="calClick(${d})" style="min-height:80px;padding:3px 2px 4px;border-radius:9px;background:${isT?T.sageLight:de.length?T.surface:T.parchment+'22'};border:1px solid ${isT?T.sageMid:T.border};cursor:pointer;overflow:hidden">
           <div style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${isT?T.sage:'transparent'};color:${isT?'#fff':T.ink};font-size:11px;font-weight:${isT?800:600};margin:0 auto 3px">${d}</div>
           <div style="display:flex;flex-direction:column;gap:2px">
-            ${de.slice(0,3).map(e=>`<div style="background:${ET[e.type].color}1a;border-left:2px solid ${ET[e.type].color};border-radius:0 3px 3px 0;padding:1px 2px;font-size:9px;font-weight:700;color:${ET[e.type].color};line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="${e.title||ET[e.type].label}">${ET[e.type].icon} ${shortT(e)}</div>`).join('')}
+            ${de.slice(0,3).map(e=>{const pc=pillC(e);return`<div style="background:${pc}22;border-left:2px solid ${pc};border-radius:0 3px 3px 0;padding:1px 2px;font-size:9px;font-weight:700;color:${pc};line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="${e.title||ET[e.type].label}">${ET[e.type].icon} ${shortT(e)}</div>`;}).join('')}
             ${de.length>3?`<div style="font-size:8px;color:${T.muted};font-weight:700;text-align:center;padding-top:1px">+${de.length-3} more</div>`:''}
           </div>
         </div>`;
       }).join('')}
     </div>`;
   } else if(A.calView==='week'){
-    const ws=new Date(A.calDate);ws.setDate(ws.getDate()-ws.getDay());
+    const ws=new Date(A.calDate);const wd=ws.getDay();ws.setDate(ws.getDate()-((wd+6)%7));
     grid=Array.from({length:7},(_,i)=>{
       const d=new Date(ws);d.setDate(d.getDate()+i);
       const de=filtered.filter(e=>isSameDay(e.date,d));
       const isT=isSameDay(d,todayD());
       return`<div style="display:flex;gap:10px;margin-bottom:8px">
         <div style="width:38px;height:38px;border-radius:50%;background:${isT?T.sage:T.parchment};display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid ${isT?T.sageMid:T.border};flex-shrink:0">
-          <div style="font-size:9px;font-weight:700;color:${isT?'#fff':T.muted};text-transform:uppercase">${DN[d.getDay()]}</div>
+          <div style="font-size:9px;font-weight:700;color:${isT?'#fff':T.muted};text-transform:uppercase">${DN[(d.getDay()+6)%7]}</div>
           <div style="font-size:13px;font-weight:800;color:${isT?'#fff':T.ink};line-height:1">${d.getDate()}</div>
         </div>
         <div style="flex:1;padding-top:2px">
@@ -555,13 +558,24 @@ window.showPicker=showPicker;
 function openEvForm(type,evId,dateTs){
   const ev=evId?A.events.find(e=>e.id===evId):null;
   const cfg=ET[type];
+  // Default date: use clicked day if provided, else today
   const iDate=dateTs?toISO(new Date(dateTs)):toISO(todayD());
+  // Default hour: current hour, minutes always 00
+  const nowH=new Date().getHours();
+  const defStartH=String(nowH).padStart(2,'0')+':00';
+  const defEndH=String(nowH+1).padStart(2,'0')+':00';
+  // Parse existing event times if editing
+  const evDate=ev?toISO(ev.date):'';
+  const evTime=ev?new Date(ev.date).toTimeString().slice(0,5):'';
+  const evEndDate=ev&&ev.end_date?toISO(ev.end_date):'';
+  const evEndTime=ev&&ev.end_date?new Date(ev.end_date).toTimeString().slice(0,5):'';
+  const isAllDay=ev?!!ev.all_day:false;
   let fields='';
   if(type==='wellness'){
     fields=`
       <div class="form-row"><label class="lbl">Family Member</label>
         <select class="sel" id="ef-mem"><option value="">Select…</option>${A.members.map(m=>`<option value="${m.id}"${ev?.member_id===m.id?' selected':''}>${m.name}</option>`).join('')}</select></div>
-      <div class="form-row"><label class="lbl">Date</label><input class="inp" type="date" id="ef-date" value="${ev?toISO(ev.date):iDate}"></div>
+      <div class="form-row"><label class="lbl">Date</label><input class="inp" type="date" id="ef-date" value="${evDate||iDate}"></div>
       <div class="grid2">
         <div class="form-row" style="margin:0"><label class="lbl">Weight (kg)</label><input class="inp" type="number" id="ef-wt" placeholder="62.5" value="${ev?.weight||''}"></div>
         <div class="form-row" style="margin:0"><label class="lbl">Height (cm)</label><input class="inp" type="number" id="ef-ht" placeholder="168" value="${ev?.height||''}"></div>
@@ -586,10 +600,19 @@ function openEvForm(type,evId,dateTs){
         <select class="sel" id="ef-apt">${['Appointment','Treatment','Illness','Check-up','Emergency','Other'].map(t=>`<option${ev?.appt_type===t?' selected':''}>${t}</option>`).join('')}</select></div>`:''}
       <div class="form-row"><label class="lbl">Title</label><input class="inp" id="ef-title" value="${ev?.title||''}" placeholder="Add a title…"></div>
       ${type!=='task'?`<div class="form-row"><label class="lbl">Location</label><input class="inp" id="ef-loc" value="${ev?.location||''}" placeholder="Where?"></div>`:''}
-      <div class="grid2">
-        <div class="form-row" style="margin:0"><label class="lbl">${type==='task'?'Due Date':'Start'}</label><input class="inp" type="${type==='task'?'date':'datetime-local'}" id="ef-date" value="${ev?toISO(ev.date):iDate}"></div>
-        ${type!=='task'?`<div class="form-row" style="margin:0"><label class="lbl">End</label><input class="inp" type="datetime-local" id="ef-end" value="${ev?.end_date?toISO(ev.end_date):''}"></div>`:''}
+      ${type==='task'?`
+      <div class="form-row"><label class="lbl">Due Date</label><input class="inp" type="date" id="ef-date" value="${evDate||iDate}"></div>`:`
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-bottom:10px;cursor:pointer">
+        <input type="checkbox" id="ef-allday" ${isAllDay?'checked':''} onchange="toggleAllDay(this.checked)"> All day event
+      </label>
+      <div class="grid2" style="margin-bottom:0">
+        <div class="form-row" style="margin:0"><label class="lbl">Start Date</label><input class="inp" type="date" id="ef-date" value="${evDate||iDate}"></div>
+        <div class="form-row" style="margin:0" id="ef-stime-row" ${isAllDay?'style="display:none"':''}><label class="lbl">Start Time</label><input class="inp" type="time" id="ef-stime" value="${evTime||defStartH}"></div>
       </div>
+      <div class="grid2">
+        <div class="form-row" style="margin:0"><label class="lbl">End Date</label><input class="inp" type="date" id="ef-enddate" value="${evEndDate||iDate}"></div>
+        <div class="form-row" style="margin:0" id="ef-etime-row" ${isAllDay?'style="display:none"':''}><label class="lbl">End Time</label><input class="inp" type="time" id="ef-etime" value="${evEndTime||defEndH}"></div>
+      </div>`}
       ${type==='task'?`<div class="form-row"><label class="lbl">Assign To</label>
         <select class="sel" id="ef-mem"><option value="">Anyone</option>${A.members.map(m=>`<option value="${m.id}"${ev?.member_id===m.id?' selected':''}>${m.name}</option>`).join('')}</select></div>`
         :`<div class="form-row"><label class="lbl">Participants</label>
@@ -615,6 +638,14 @@ function openEvForm(type,evId,dateTs){
     </div>`);
 }
 window.openEvForm=openEvForm;
+
+function toggleAllDay(checked){
+  const st=document.getElementById('ef-stime-row');
+  const et=document.getElementById('ef-etime-row');
+  if(st)st.style.display=checked?'none':'block';
+  if(et)et.style.display=checked?'none':'block';
+}
+window.toggleAllDay=toggleAllDay;
 
 function togPart(btn,id){
   const sel=btn.dataset.sel==='true';
@@ -669,10 +700,22 @@ async function saveEv(type,evId,dateTs){
     } else {
       data.title=document.getElementById('ef-title')?.value||'';
       if(!data.title){toast('Please add a title.',true);return;}
-      const dateVal=document.getElementById('ef-date')?.value;
-      data.date=dateVal?new Date(dateVal).toISOString():new Date().toISOString();
-      const endVal=document.getElementById('ef-end')?.value;
-      data.end_date=endVal?new Date(endVal).toISOString():null;
+      if(type==='task'){
+        const dv=document.getElementById('ef-date')?.value;
+        data.date=dv?new Date(dv).toISOString():new Date().toISOString();
+        data.end_date=null;
+        data.all_day=true;
+      } else {
+        const allDay=document.getElementById('ef-allday')?.checked||false;
+        data.all_day=allDay;
+        const dateV=document.getElementById('ef-date')?.value||toISO(new Date());
+        const stimeV=allDay?'00:00':document.getElementById('ef-stime')?.value||'00:00';
+        const endDateV=document.getElementById('ef-enddate')?.value||dateV;
+        const etimeV=allDay?'00:00':document.getElementById('ef-etime')?.value||'00:00';
+        // Build ISO strings from separate date+time fields
+        data.date=new Date(dateV+'T'+stimeV).toISOString();
+        data.end_date=new Date(endDateV+'T'+etimeV).toISOString();
+      }
       data.location=document.getElementById('ef-loc')?.value||null;
       data.description=document.getElementById('ef-desc')?.value||null;
       data.appt_type=document.getElementById('ef-apt')?.value||null;
@@ -682,7 +725,11 @@ async function saveEv(type,evId,dateTs){
       data.tags=Array.from(document.querySelectorAll('#ef-tags button[data-sel="true"]')).map(b=>b.dataset.tag).filter(Boolean);
     }
     let res;
-    if(evId){res=await sb.from('events').update(data).eq('id',evId).select().single();}
+    // Always strip family_id from update payload to avoid RLS issues
+    if(evId){
+      const{family_id:_,...updateData}=data;
+      res=await sb.from('events').update(updateData).eq('id',evId).select().single();
+    }
     else{res=await sb.from('events').insert(data).select().single();}
     if(res.error){console.error('Event save error',res.error);toast('Error saving. Check console.',true);return;}
     if(evId)A.events=A.events.map(e=>e.id===evId?res.data:e);
@@ -704,7 +751,7 @@ function viewEv(id){
       </div>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:13px;color:${T.muted};margin-bottom:12px">
-      <span>📅 ${fmt(ev.date)}${ev.end_date?` → ${fmt(ev.end_date)}`:''}</span>
+      <span>📅 ${fmt(ev.date)}${ev.all_day?' (All day)':ev.end_date?` → ${fmt(ev.end_date)}`:''}</span>
       ${ev.location?`<span>📍 ${ev.location}</span>`:''}
       ${ev.recurrence&&ev.recurrence!=='None'?`<span>🔁 ${ev.recurrence}</span>`:''}
     </div>`;
@@ -839,22 +886,38 @@ function openNote(noteId){
       <button class="btn btn-primary" style="flex:1" onclick="saveNote('${noteId||''}')">Save</button>
       ${noteId?`<button class="btn btn-danger" onclick="delNote('${noteId}')">🗑</button>`:''}
     </div>`);
-  // Handle "New Group" selection
+  // Handle "New Group" selection - use in-app modal instead of browser prompt
   document.getElementById('ne-grp').addEventListener('change',function(){
     if(this.value==='__new__'){
-      const name=prompt('New group name:');
-      if(name&&A.family){
-        sb.from('note_groups').insert({family_id:A.family.id,name}).select().single().then(({data})=>{
-          if(data){
-            A.noteGroups.push(data);
-            const opt=document.createElement('option');
-            opt.value=data.id;opt.textContent=data.name;opt.selected=true;
-            this.insertBefore(opt,this.querySelector('option[value="__new__"]'));
-            this.value=data.id;
-            toast('Group created!');
-          }
-        });
-      } else { this.value=''; }
+      const sel=this;
+      sel.value=''; // Reset while modal is open
+      // Show in-app modal
+      const overlay=document.createElement('div');
+      overlay.style.cssText='position:fixed;inset:0;background:rgba(20,18,14,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px';
+      overlay.innerHTML=`<div style="background:#fff;border-radius:16px;padding:22px;width:100%;max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+        <div style="font-family:Playfair Display,serif;font-size:17px;color:#1e1b16;margin-bottom:14px">New Group</div>
+        <input id="ng-inline-name" class="inp" placeholder="Group name e.g. 🏠 Household" autofocus style="margin-bottom:14px">
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-primary" style="flex:1" onclick="
+            const n=document.getElementById('ng-inline-name').value.trim();
+            if(!n||!A.family)return;
+            sb.from('note_groups').insert({family_id:A.family.id,name:n}).select().single().then(({data})=>{
+              if(data){
+                A.noteGroups.push(data);
+                const opt=document.createElement('option');
+                opt.value=data.id;opt.textContent=data.name;opt.selected=true;
+                sel.insertBefore(opt,sel.querySelector('option[value=\'__new__\']'));
+                sel.value=data.id;
+                toast('Group created!');
+              }
+              document.body.removeChild(overlay);
+            });
+          ">Create</button>
+          <button class="btn btn-secondary" style="flex:1" onclick="document.body.removeChild(this.closest('[style*=fixed]'))">Cancel</button>
+        </div>
+      </div>`;
+      document.body.appendChild(overlay);
+      setTimeout(()=>document.getElementById('ng-inline-name')?.focus(),50);
     }
   });
 }
@@ -1399,7 +1462,27 @@ async function sendInvite(email,memberId){
 window.sendInvite=sendInvite;
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────
-function boot(){
+function showAuth(){
+  document.getElementById('loading-screen').style.display='none';
+  document.getElementById('root').style.display='none';
+  document.getElementById('auth-screen').style.display='flex';
+}
+
+async function handleSession(session){
+  try{
+    if(session?.user){
+      document.getElementById('auth-screen').style.display='none';
+      await initApp(session.user);
+    } else {
+      showAuth();
+    }
+  }catch(e){
+    console.error('Session error',e);
+    showAuth();
+  }
+}
+
+async function boot(){
   if(!sb){
     document.getElementById('loading-screen').innerHTML=`<div style="text-align:center;padding:40px;font-family:sans-serif">
       <div style="font-size:40px;margin-bottom:16px">⚠️</div>
@@ -1409,21 +1492,13 @@ function boot(){
     </div>`;
     return;
   }
+  // Immediately check existing session — avoids blank screen on first load
+  const { data:{ session } } = await sb.auth.getSession();
+  await handleSession(session);
+  // Also listen for future auth changes (login/logout)
   sb.auth.onAuthStateChange(async(event,session)=>{
-    try{
-      if(session?.user){
-        document.getElementById('auth-screen').style.display='none';
-        await initApp(session.user);
-      } else {
-        document.getElementById('loading-screen').style.display='none';
-        document.getElementById('root').style.display='none';
-        document.getElementById('auth-screen').style.display='flex';
-      }
-    }catch(e){
-      console.error('Auth error',e);
-      document.getElementById('loading-screen').style.display='none';
-      document.getElementById('auth-screen').style.display='flex';
-    }
+    if(event==='SIGNED_IN') await handleSession(session);
+    if(event==='SIGNED_OUT') showAuth();
   });
 }
 
