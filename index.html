@@ -118,7 +118,8 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--sage);outline-of
 <div id="root" style="display:none">
   <div class="top-bar">
     <div class="top-logo">🌿 Kinship</div>
-    <div style="display:flex;align-items:center;gap:8px">
+    <div style="display:flex;align-items:center;gap:6px">
+      <button id="sample-btn" onclick="toggleSampleMode()" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;background:var(--honey-light);color:var(--honey);border:1px solid var(--honey)44;cursor:pointer;display:none">📋 Sample</button>
       <span id="fam-badge" style="font-size:11px;font-weight:700;color:var(--muted)"></span>
       <button class="btn btn-secondary btn-sm" onclick="doSignOut()">Sign out</button>
     </div>
@@ -150,7 +151,7 @@ try { sb = supabase.createClient(SB_URL, SB_KEY); } catch(e) { console.error('Su
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 const T={sage:'#5e8b62',sageMid:'#8ab88e',sageLight:'#d4e8d6',terra:'#b85c38',terraLight:'#f2ddd4',sky:'#3a7ca5',skyLight:'#d0e4f0',plum:'#7c5c8a',plumLight:'#e8d8f0',honey:'#c4892a',honeyLight:'#f5e4c4',rose:'#b85070',roseLight:'#f0d4de',ink:'#1e1b16',muted:'#7a7060',border:'#e0d8cc',bg:'#f5f2ed',surface:'#fff',parchment:'#ede8df'};
-const ET={social:{label:'Social Event',icon:'🏙️',color:T.sky,bg:T.skyLight,desc:'Gatherings, outings, celebrations'},health:{label:'Health Event',icon:'❤️',color:T.rose,bg:T.roseLight,desc:'Appointments, treatments, check-ups'},wellness:{label:'Wellness Log',icon:'🌿',color:T.sage,bg:T.sageLight,desc:'Daily health summary — sleep, mood, exercise'},task:{label:'Task',icon:'✅',color:T.honey,bg:T.honeyLight,desc:'To-dos assigned to family members'}};
+const ET={social:{label:'Social Event',icon:'👥',color:T.sky,bg:T.skyLight,desc:'Gatherings, outings, celebrations'},health:{label:'Health Event',icon:'❤️',color:T.rose,bg:T.roseLight,desc:'Appointments, treatments, check-ups'},wellness:{label:'Wellness Log',icon:'🌿',color:T.sage,bg:T.sageLight,desc:'Daily health summary — sleep, mood, exercise'},task:{label:'Task',icon:'✅',color:T.honey,bg:T.honeyLight,desc:'To-dos assigned to family members'}};
 const MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const DNF=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
@@ -216,7 +217,71 @@ const CHALLENGES=[
   {title:'Words of Affirmation Week 💬',body:'Every morning this week, say one positive thing to each family member before you leave for the day.',tips:['Be specific, not generic','Post-it notes on the mirror work too','Kids thrive on this — watch their confidence']},
 ];
 
+
+// ── SAMPLE DATA ───────────────────────────────────────────────────────────────
+const _SD_now = new Date();
+const _SD_Y = _SD_now.getFullYear(), _SD_M = _SD_now.getMonth(), _SD_D = _SD_now.getDate();
+
+const SD_FAMILY = {
+  id:'sample', name:'Sample Family', currency:'EUR', transport:5,
+  tags:['family','school','health','travel','birthday','dental','sport','food'],
+  notif_week_before:true, notif_day_before:true, notif_hour_before:false, notif_ten_min:false
+};
+
+const SD_MEMBERS = [
+  {id:'sm1',name:'Elena',role:'Parent',age:38,gender:'Female',email:'elena@sample.com',color:'#5e8b62',avatar:'E'},
+  {id:'sm2',name:'David',role:'Parent',age:41,gender:'Male',email:'david@sample.com',color:'#b85c38',avatar:'D'},
+  {id:'sm3',name:'Mia',role:'Child',age:14,gender:'Female',email:'',color:'#3a7ca5',avatar:'M'},
+  {id:'sm4',name:'Leo',role:'Child',age:9,gender:'Male',email:'',color:'#7c5c8a',avatar:'L'},
+];
+
+const SD_EVENTS = [
+  {id:'se1',type:'social',title:"Leo's Birthday Party",social_type:'Birthday',date:new Date(_SD_Y,_SD_M,_SD_D+5,15,0).toISOString(),end_date:new Date(_SD_Y,_SD_M,_SD_D+5,18,0).toISOString(),location:'Home',participants:['sm1','sm2','sm3','sm4'],participants_all_family:false,description:'Leo turns 9! Dinosaur theme 🦕',recurrence:'None',actions:[{text:'Order cake',done:false},{text:'Decorate house',done:true}],tags:['birthday'],links:[]},
+  {id:'se2',type:'health',appt_type:'Appointment',title:'Mia – Orthodontist',date:new Date(_SD_Y,_SD_M,_SD_D+3,10,0).toISOString(),end_date:new Date(_SD_Y,_SD_M,_SD_D+3,11,0).toISOString(),location:'Smile Clinic',doctor:'Dr. Popescu',specialty:'Dentist',participants:['sm3'],participants_all_family:false,description:'Monthly braces adjustment',recurrence:'Monthly',recurrence_end_type:'count',recurrence_end_count:6,actions:[{text:'Bring retainer',done:false}],tags:['dental'],links:[]},
+  {id:'se3',type:'health',appt_type:'Appointment',title:'David – Cardiologist',date:new Date(_SD_Y,_SD_M,_SD_D+8,9,0).toISOString(),end_date:new Date(_SD_Y,_SD_M,_SD_D+8,10,0).toISOString(),location:'City Heart Center',doctor:'Dr. Ionescu',specialty:'Cardiology',participants:['sm2'],participants_all_family:false,description:'Annual heart check',recurrence:'Yearly',recurrence_end_type:'none',actions:[{text:'Bring last ECG results',done:false},{text:'Prepare medication list',done:true}],tags:[],links:[]},
+  {id:'se4',type:'wellness',title:'Elena · 62kg 😊 – Wellness Log',date:new Date(_SD_Y,_SD_M,_SD_D-1).toISOString(),member_id:'sm1',weight:62,height:168,hydration:2.1,exercised:true,activity:'Yoga',activity_mins:45,mood:'😊 Good',energy:75,sleep:7.5},
+  {id:'se5',type:'wellness',title:'David · 84kg 😐 – Wellness Log',date:new Date(_SD_Y,_SD_M,_SD_D-1).toISOString(),member_id:'sm2',weight:84,height:182,hydration:1.6,exercised:false,mood:'😐 Okay',energy:55,sleep:6},
+  {id:'se6',type:'wellness',title:'Elena · 62.2kg 😄 – Wellness Log',date:new Date(_SD_Y,_SD_M,_SD_D-3).toISOString(),member_id:'sm1',weight:62.2,height:168,hydration:1.8,exercised:true,activity:'Running',activity_mins:30,mood:'😄 Great',energy:85,sleep:8},
+  {id:'se7',type:'wellness',title:'Mia · 52kg 😔 – Wellness Log',date:new Date(_SD_Y,_SD_M,_SD_D-2).toISOString(),member_id:'sm3',weight:52,height:162,hydration:1.2,exercised:false,mood:'😔 Low',energy:40,sleep:9},
+  {id:'se8',type:'wellness',title:'Leo · 34kg 😄 – Wellness Log',date:new Date(_SD_Y,_SD_M,_SD_D-2).toISOString(),member_id:'sm4',weight:34,height:138,hydration:0.9,exercised:true,activity:'Football',activity_mins:90,mood:'😄 Great',energy:95,sleep:9.5},
+  {id:'se9',type:'task',title:'Book summer camp for Leo',date:new Date(_SD_Y,_SD_M,_SD_D+7).toISOString(),all_day:true,member_id:'sm1',description:'Find a sports camp for July',actions:[{text:'Research options',done:true},{text:'Compare prices',done:false},{text:'Book',done:false}],tags:['school']},
+  {id:'se10',type:'social',title:"Dinner at Grandma's",social_type:'Family time',date:new Date(_SD_Y,_SD_M,_SD_D+10).toISOString(),end_date:new Date(_SD_Y,_SD_M,_SD_D+10,22,0).toISOString(),location:"Grandma Rose's",participants_all_family:true,participants:[],description:'Sunday family dinner',recurrence:'None',actions:[],tags:['family'],links:[]},
+  {id:'se11',type:'health',appt_type:'Illness',title:'Mia – Flu',date:new Date(_SD_Y,_SD_M-1,15).toISOString(),end_date:new Date(_SD_Y,_SD_M-1,18).toISOString(),all_day:true,participants:['sm3'],participants_all_family:false,symptoms:'High fever 38.9°C, sore throat, fatigue',cure:'Paracetamol 500mg, rest, fluids',tags:['illness']},
+  {id:'se12',type:'health',appt_type:'Treatment',title:'Leo – Antibiotic Course',date:new Date(_SD_Y,_SD_M,_SD_D-5).toISOString(),end_date:new Date(_SD_Y,_SD_M,_SD_D+2).toISOString(),all_day:true,participants:['sm4'],participants_all_family:false,administration:[{units:'1 pill',timing:['Morning','Evening']}],recommended_by:'Dr. Marinescu',considerations:'Must be taken with food. Complete the full course.',recurrence:'None',tags:[]},
+];
+
+const SD_NOTES = [
+  {id:'sn1',title:'School pickup schedule',content:'Mon/Wed: Elena. Tue/Thu: David. Fri: kids walk together.',color:'#d4e8d6',pinned:true,group_id:'sg1',checklist:[],member_id:null,tags:[]},
+  {id:'sn2',title:"Leo's allergies ⚠️",content:'Peanuts (SEVERE) — EpiPen in his backpack always. Seasonal pollen (spring). Penicillin (mild).',color:'#f0d4de',pinned:true,group_id:'sg2',checklist:[],member_id:'sm4',tags:['health','urgent']},
+  {id:'sn3',title:'Summer holiday ideas',content:'Portugal or Greece for August. Budget ~€3000.',color:'#f5e4c4',pinned:false,group_id:null,checklist:[{id:'c1',text:'Check flight prices',done:false},{id:'c2',text:'Ask school for holiday dates',done:true},{id:'c3',text:'Compare destinations',done:false}],member_id:null,tags:['travel']},
+  {id:'sn4',title:"Mia's reading list",content:'',color:'#e8d8f0',pinned:false,group_id:'sg3',checklist:[{id:'c4',text:'The Alchemist ✓',done:true},{id:'c5',text:'Dune (in progress)',done:false},{id:'c6',text:'Project Hail Mary — next',done:false}],member_id:'sm3',tags:['books']},
+  {id:'sn5',title:'Weekly meal plan',content:'',color:'#ede8df',pinned:false,group_id:'sg1',checklist:[{id:'c7',text:'Mon: Pasta',done:false},{id:'c8',text:'Tue: Tacos',done:false},{id:'c9',text:'Wed: Stir fry',done:false},{id:'c10',text:'Thu: Leftovers',done:false},{id:'c11',text:'Fri: Pizza 🍕',done:false}],member_id:null,tags:['food']},
+];
+
+const SD_GROUPS = [
+  {id:'sg1',name:'🏠 Household',color:'#5e8b62'},
+  {id:'sg2',name:'❤️ Health & Safety',color:'#b85070'},
+  {id:'sg3',name:'📚 Kids',color:'#3a7ca5'},
+  {id:'sg4',name:'📅 Calendar Actions',color:'#c4892a'},
+];
+
+const SD_DM = [
+  {id:'dm1',name:'Metformin 500mg',member_ids:['sm2'],dose_per_day:2,units_per_pkg:60,price_per_pkg:8.50,stock_today:28,new_order_pkgs:0,shared:false,note:'Take with meals'},
+  {id:'dm2',name:'Vitamin D 1000IU',member_ids:['sm1','sm2'],dose_per_day:1,units_per_pkg:90,price_per_pkg:12.00,stock_today:45,new_order_pkgs:0,shared:true,note:'Morning'},
+  {id:'dm3',name:'Omega-3',member_ids:['sm1'],dose_per_day:2,units_per_pkg:60,price_per_pkg:15.50,stock_today:60,new_order_pkgs:0,shared:false,note:''},
+  {id:'dm4',name:'Zinc 10mg',member_ids:['sm3','sm4'],dose_per_day:1,units_per_pkg:60,price_per_pkg:6.00,stock_today:22,new_order_pkgs:2,shared:true,note:'Immunity support'},
+  {id:'dm5',name:'Iron Supplement',member_ids:['sm3'],dose_per_day:1,units_per_pkg:30,price_per_pkg:9.00,stock_today:8,new_order_pkgs:1,shared:false,note:'With vitamin C'},
+];
+
+const SD_OM = [
+  {id:'om1',name:'Ibuprofen 400mg',stock:6,last_count:new Date(_SD_Y,_SD_M,_SD_D-10).toISOString(),expiry:new Date(_SD_Y+1,5,30).toISOString(),note:''},
+  {id:'om2',name:"Children's Ibuprofen",stock:3,last_count:new Date(_SD_Y,_SD_M,_SD_D-5).toISOString(),expiry:new Date(_SD_Y,11,30).toISOString(),note:'Leo/Mia'},
+  {id:'om3',name:'EpiPen Jr (Leo)',stock:2,last_count:new Date(_SD_Y,_SD_M-1,15).toISOString(),expiry:new Date(_SD_Y,6,15).toISOString(),note:'⚠️ CHECK EXPIRY DATE'},
+  {id:'om4',name:'Paracetamol 1g',stock:12,last_count:new Date(_SD_Y,_SD_M,_SD_D-3).toISOString(),expiry:new Date(_SD_Y+2,0,1).toISOString(),note:''},
+];
+
 // ── STATE ─────────────────────────────────────────────────────────────────────
+let _sampleMode = false;
 let A={
   user:null,family:null,members:[],events:[],notes:[],noteGroups:[],
   dailyMeds:[],occMeds:[],
@@ -232,8 +297,8 @@ const toISO=d=>d?new Date(d).toISOString().split('T')[0]:'';
 const todayD=()=>{const d=new Date();d.setHours(0,0,0,0);return d;};
 const addDays=(d,n)=>{const r=new Date(d);r.setDate(r.getDate()+n);return r;};
 const isSameDay=(a,b)=>{const da=new Date(a),db=new Date(b);return da.getFullYear()===db.getFullYear()&&da.getMonth()===db.getMonth()&&da.getDate()===db.getDate();};
-const getMem=id=>A.members.find(m=>m.id===id);
-const symC=()=>CURRENCIES.find(c=>c.code===(A.family?.currency||'EUR'))?.sym||'€';
+const getMem=id=>getMembers().find(m=>m.id===id);
+const symC=()=>CURRENCIES.find(c=>c.code===(getFamily()?.currency||'EUR'))?.sym||'€';
 const av=(m,sz=28)=>`<div class="avatar" style="width:${sz}px;height:${sz}px;background:${m.color}22;border:2px solid ${m.color};font-size:${Math.round(sz*.38)}px;color:${m.color}">${m.avatar||m.name[0]}</div>`;
 
 function toast(msg,isErr=false){
@@ -327,6 +392,9 @@ async function initApp(user){
   document.getElementById('root').style.display='flex';
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('fam-badge').textContent=A.family?.name||'';
+  // Show sample data button
+  const sBtn = document.getElementById('sample-btn');
+  if (sBtn) sBtn.style.display = 'block';
   goTo('calendar');
   if(A.showOB)renderOB();
 }
@@ -397,7 +465,7 @@ function renderCal(){
   const dIM=new Date(vY,vM+1,0).getDate();
   const cells=Array.from({length:Math.ceil((firstDay+dIM)/7)*7},(_,i)=>{const d=i-firstDay+1;return d>=1&&d<=dIM?d:null;});
 
-  const filtered=A.events.filter(e=>{
+  const filtered=getEvents().filter(e=>{
     if(A.calFType!=='all'&&e.type!==A.calFType)return false;
     if(A.calFMember!=='all'&&!(e.participants||[]).includes(A.calFMember)&&e.member_id!==A.calFMember)return false;
     if(A.calSearch){const q=A.calSearch.toLowerCase();if(![e.title,e.description,e.location,e.activity,...(e.tags||[])].filter(Boolean).join(' ').toLowerCase().includes(q))return false;}
@@ -419,10 +487,12 @@ function renderCal(){
         const de=evOnDay(d);
         const shortT=e=>{const t=e.title||ET[e.type].label;const s=t.replace(/\s*[-–]\s*Wellness Log$/i,'').replace(/^Wellness Log$/i,'Log');return s.length>8?s.substring(0,7)+'\u2026':s;};
         const pillC=e=>{
-          if(e.participants_all_family)return T.border; // family/no-one = grey
+          // Family-wide or unassigned: use readable dark grey
+          if(e.participants_all_family || (!e.member_id && !(e.participants&&e.participants.length)))
+            return '#5a5248';
           const mid=e.member_id||(e.participants&&e.participants[0]);
           const mem=A.members.find(m=>m.id===mid);
-          return mem?mem.color:T.border;
+          return mem?mem.color:'#5a5248';
         };
         // Check if this day is a continuation of a multi-day event
         const dt=new Date(vY,vM,d);
@@ -435,7 +505,7 @@ function renderCal(){
         return`<div onclick="calClick(${d})" style="min-height:80px;padding:3px 2px 4px;border-radius:9px;background:${isT?T.sageLight:de.length||allDaySpan.length?T.surface:T.parchment+'22'};border:1px solid ${isT?T.sageMid:T.border};cursor:pointer;overflow:hidden">
           <div style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${isT?T.sage:'transparent'};color:${isT?'#fff':T.ink};font-size:11px;font-weight:${isT?800:600};margin:0 auto 3px">${d}</div>
           <div style="display:flex;flex-direction:column;gap:2px">
-            ${allDaySpan.slice(0,1).map(e=>{const pc=pillC(e);return`<div style="background:${pc}33;border-radius:3px;padding:1px 3px;font-size:9px;font-weight:700;color:${pc};line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;border-left:none;border-top:2px solid ${pc}">${ET[e.type].icon} ${shortT(e)}</div>`;}).join('')}
+            ${allDaySpan.slice(0,1).map(e=>{const pc=pillC(e);return`<div style="background:${pc}33;margin:0 -2px;padding:2px 4px;font-size:9px;font-weight:700;color:${pc};line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;border-top:2px solid ${pc};border-bottom:2px solid ${pc}"> ${shortT(e)}</div>`;}).join('')}
             ${de.slice(0,3-allDaySpan.length).map(e=>{const pc=pillC(e);return`<div style="background:${pc}22;border-left:2px solid ${pc};border-radius:0 3px 3px 0;padding:1px 2px;font-size:9px;font-weight:700;color:${pc};line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="${e.title||ET[e.type].label}">${ET[e.type].icon} ${shortT(e)}</div>`;}).join('')}
             ${de.length+allDaySpan.length>3?`<div style="font-size:8px;color:${T.muted};font-weight:700;text-align:center;padding-top:1px">+${de.length+allDaySpan.length-3} more</div>`:''}
           </div>
@@ -495,7 +565,7 @@ function renderCal(){
 
   document.getElementById('page-calendar').innerHTML=`
     <div class="page-header">
-      <div class="family-label">${A.family?.name||''}</div>
+      <div class="family-label">${getFamily()?.name||''}</div>
       <div class="page-title">Calendar <button class="btn btn-primary btn-sm" onclick="showPicker(null)">+ Add</button></div>
     </div>
     <div style="padding:8px 16px 0;display:flex;gap:5px;flex-wrap:wrap">
@@ -509,7 +579,7 @@ function renderCal(){
       </select>
       <select class="sel" style="width:auto;font-size:12px;padding:5px 8px;border-radius:20px;flex-shrink:0" onchange="A.calFMember=this.value;renderCal()">
         <option value="all">All members</option>
-        ${A.members.map(m=>`<option value="${m.id}"${A.calFMember===m.id?' selected':''}>${m.name}</option>`).join('')}
+        ${getMembers().map(m=>`<option value="${m.id}"${A.calFMember===m.id?' selected':''}>${m.name}</option>`).join('')}
       </select>
     </div>
     <div style="padding:6px 16px 0">
@@ -560,6 +630,7 @@ function showMPicker(){
 window.showMPicker=showMPicker;
 
 function showPicker(dt){
+  if(isSampleMode()){toast('Switch to My Family to add real entries.',true);return;}
   showModal('New Entry',`
     <p style="color:${T.muted};font-size:13px;margin-bottom:14px">What kind of entry?</p>
     ${Object.entries(ET).map(([type,cfg])=>`
@@ -771,7 +842,7 @@ function openEvForm(type, evId, dateTs, duplicateId) {
   // Helper: tags
   const tagButtons = () => `
     <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px" id="ef-tags">
-      ${(A.family?.tags||[]).map(t=>{const sel=(source?.tags||[]).includes(t);return`<button type="button" data-tag="${t}" data-sel="${sel}" onclick="togTag(this)" style="padding:3px 9px;border-radius:99px;border:1.5px solid ${sel?T.sage:T.border};background:${sel?T.sageLight:'#fff'};color:${sel?T.sage:T.muted};font-size:12px;font-weight:600;cursor:pointer">${t}</button>`;}).join('')}
+      ${(getFamily()?.tags||[]).map(t=>{const sel=(source?.tags||[]).includes(t);return`<button type="button" data-tag="${t}" data-sel="${sel}" onclick="togTag(this)" style="padding:3px 9px;border-radius:99px;border:1.5px solid ${sel?T.sage:T.border};background:${sel?T.sageLight:'#fff'};color:${sel?T.sage:T.muted};font-size:12px;font-weight:600;cursor:pointer">${t}</button>`;}).join('')}
     </div>
     <div style="display:flex;gap:7px"><input class="inp" id="ef-ntag" placeholder="Custom tag…" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addTag();}"><button class="btn btn-secondary btn-sm" onclick="addTag()">Add</button></div>`;
 
@@ -816,19 +887,18 @@ function openEvForm(type, evId, dateTs, duplicateId) {
         <input class="inp" type="time" id="ef-etime" value="${eTime}"></div>
     </div>`;
 
-  // Helper: attachment upload
+  // Helper: link attachments
   const attachmentField = () => `
-    <div class="form-row"><label class="lbl">Attachments</label>
-      <div id="ef-attachments" style="display:flex;flex-direction:column;gap:6px">
-        ${(source?.attachment_urls||[]).map((url,i)=>`<div style="display:flex;align-items:center;gap:8px;background:${T.parchment};border-radius:8px;padding:6px 10px;font-size:12px">
-          <span>📎</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${url.split('/').pop()}</span>
-          <button type="button" onclick="this.closest('div').remove()" style="background:none;border:none;color:${T.muted};cursor:pointer;font-size:14px">×</button>
+    <div class="form-row"><label class="lbl">Links & Documents</label>
+      <div id="ef-links" style="display:flex;flex-direction:column;gap:6px">
+        ${(source?.links||[]).map((lnk,i)=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <input class="inp" value="${lnk.label||''}" placeholder="Label (e.g. Test results)" style="flex:1;font-size:12px;padding:5px 8px" id="ll-${i}">
+          <input class="inp" value="${lnk.url||''}" placeholder="https://…" style="flex:1.5;font-size:12px;padding:5px 8px" id="lu-${i}">
+          <button type="button" onclick="this.closest('div').remove()" style="background:none;border:none;color:${T.muted};font-size:16px;cursor:pointer;padding:4px">×</button>
         </div>`).join('')}
       </div>
-      <label style="display:flex;align-items:center;gap:7px;margin-top:6px;cursor:pointer;font-size:13px;color:${T.sage};font-weight:600">
-        <input type="file" id="ef-file" multiple style="display:none" onchange="handleFileSelect(this)">
-        📎 Add attachment
-      </label>
+      <button type="button" onclick="addLinkRow()" style="font-size:12px;color:${T.sage};background:none;border:1px dashed ${T.sageMid};border-radius:8px;padding:4px 10px;cursor:pointer;font-weight:600;margin-top:4px">🔗 Add link</button>
+      <div style="font-size:11px;color:${T.muted};margin-top:4px">Add Google Drive, Dropbox, or any URL to a document</div>
     </div>`;
 
   let fields = '';
@@ -847,7 +917,7 @@ function openEvForm(type, evId, dateTs, duplicateId) {
         <div class="form-row" style="margin:0"><label class="lbl">Weight (kg)</label><input class="inp" type="number" id="ef-wt" placeholder="62.5" value="${source?.weight||''}"></div>
         <div class="form-row" style="margin:0"><label class="lbl">Height (cm)</label><input class="inp" type="number" id="ef-ht" placeholder="168" value="${source?.height||''}"></div>
       </div>
-      <div class="form-row"><label class="lbl">Hydration (litres)</label><input class="inp" type="number" step="0.1" id="ef-hyd" placeholder="1.5" value="${source?.hydration?source.hydration/1000:''}"></div>
+      <div class="form-row"><label class="lbl">Hydration (litres)</label><input class="inp" type="number" step="0.1" id="ef-hyd" placeholder="1.5" value="${source?.hydration||''}"></div>
       <label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;margin-bottom:12px;cursor:pointer">
         <input type="checkbox" id="ef-ex" ${source?.exercised?'checked':''} onchange="document.getElementById('ef-exrow').style.display=this.checked?'grid':'none'"> Exercised today
       </label>
@@ -1092,26 +1162,38 @@ function prefillWellness(memberId) {
   const setVal = (id, val) => { const el=document.getElementById(id); if(el&&val!==undefined&&val!==null&&val!=='') el.value=val; };
   setVal('ef-wt', last.weight);
   setVal('ef-ht', last.height);
-  setVal('ef-hyd', last.hydration ? last.hydration/1000 : '');
+  setVal('ef-hyd', last.hydration||'');
   setVal('ef-en', last.energy);
   setVal('ef-sl', last.sleep);
   if (last.mood) { const mSel=document.getElementById('ef-mood'); if(mSel) mSel.value=last.mood; }
 }
 window.prefillWellness = prefillWellness;
 
-function handleFileSelect(input) {
-  const cont = document.getElementById('ef-attachments');
+function addLinkRow() {
+  const cont = document.getElementById('ef-links');
   if (!cont) return;
-  Array.from(input.files).forEach(file => {
-    const div = document.createElement('div');
-    div.style.cssText = `display:flex;align-items:center;gap:8px;background:${T.parchment};border-radius:8px;padding:6px 10px;font-size:12px`;
-    div.dataset.file = file.name;
-    div.innerHTML = `<span>📎</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${file.name}</span><button type="button" onclick="this.closest('[data-file]').remove()" style="background:none;border:none;color:${T.muted};cursor:pointer;font-size:14px">×</button>`;
-    cont.appendChild(div);
-  });
-  input.value = '';
+  const i = cont.children.length;
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:4px';
+  div.innerHTML = `<input class="inp" placeholder="Label (e.g. Test results)" style="flex:1;font-size:12px;padding:5px 8px" id="ll-${i}"><input class="inp" placeholder="https://…" style="flex:1.5;font-size:12px;padding:5px 8px" id="lu-${i}"><button type="button" onclick="this.closest('div').remove()" style="background:none;border:none;color:${T.muted};font-size:16px;cursor:pointer;padding:4px">×</button>`;
+  cont.appendChild(div);
+  div.querySelector('input').focus();
 }
-window.handleFileSelect = handleFileSelect;
+window.addLinkRow = addLinkRow;
+
+function getLinks() {
+  const cont = document.getElementById('ef-links');
+  if (!cont) return [];
+  const links = [];
+  cont.querySelectorAll('div').forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    if (inputs.length >= 2 && inputs[1].value.trim()) {
+      links.push({ label: inputs[0].value.trim(), url: inputs[1].value.trim() });
+    }
+  });
+  return links;
+}
+window.getLinks = getLinks;
 
 function togPart(btn, id) {
   const sel = btn.dataset.sel === 'true';
@@ -1161,11 +1243,14 @@ async function saveEv(type, evId, dateTs) {
       const rawDate = document.getElementById('ef-date')?.value;
       data.date = rawDate ? rawDate + 'T12:00:00' : new Date().toISOString();
       const mem = getMem(data.member_id);
-      data.title = mem ? `${mem.name} – Wellness Log` : 'Wellness Log';
+      const wKg = parseFloat(document.getElementById('ef-wt')?.value);
+      const wMood = document.getElementById('ef-mood')?.value||'';
+      const moodIcon = wMood ? wMood.split(' ')[0] : '';
+      const kgStr = wKg ? ` · ${wKg}kg` : '';
+      data.title = mem ? `${mem.name}${kgStr}${moodIcon?' '+moodIcon:''} – Wellness Log` : 'Wellness Log';
       data.weight = parseFloat(document.getElementById('ef-wt')?.value) || null;
       data.height = parseFloat(document.getElementById('ef-ht')?.value) || null;
-      const hydL = parseFloat(document.getElementById('ef-hyd')?.value);
-      data.hydration = hydL ? Math.round(hydL * 1000) : null;
+      data.hydration = parseFloat(document.getElementById('ef-hyd')?.value) || null;
       data.exercised = document.getElementById('ef-ex')?.checked || false;
       data.activity = document.getElementById('ef-act')?.value || null;
       data.activity_mins = parseInt(document.getElementById('ef-actm')?.value) || null;
@@ -1205,6 +1290,7 @@ async function saveEv(type, evId, dateTs) {
       data.actions = getChecklist('ef-actions');
       data.description = document.getElementById('ef-desc')?.value || null;
       data.tags = Array.from(document.querySelectorAll('#ef-tags button[data-sel="true"]')).map(b=>b.dataset.tag).filter(Boolean);
+      data.links = getLinks();
       const partBtns = Array.from(document.querySelectorAll('#ef-parts button[data-sel="true"]'));
       data.participants_all_family = partBtns.some(b=>b.dataset.mid==='__family__');
       data.participants = partBtns.filter(b=>b.dataset.mid!=='__family__').map(b=>b.dataset.mid).filter(Boolean);
@@ -1235,6 +1321,7 @@ async function saveEv(type, evId, dateTs) {
         data.cost_currency = document.getElementById('ef-cost-cur')?.value || null;
         data.actions = getChecklist('ef-actions');
         data.description = document.getElementById('ef-desc')?.value || null;
+        data.links = getLinks();
         data.recurrence = document.getElementById('ef-rec')?.value || 'None';
         data.recurrence_end_type = document.getElementById('ef-recend-type')?.value || 'none';
         data.recurrence_end_count = parseInt(document.getElementById('ef-recend-n')?.value) || null;
@@ -1266,17 +1353,39 @@ async function saveEv(type, evId, dateTs) {
     // Generate recurring events if needed
     const eventsToSave = generateRecurrences(data);
 
+    // Strip any undefined/null keys that aren't in schema to avoid DB errors
+    const cleanData = obj => {
+      const allowed = ['family_id','type','title','date','end_date','all_day','location',
+        'description','recurrence','recurrence_end_type','recurrence_end_count','recurrence_end_date',
+        'appt_type','member_id','participants','participants_all_family','tags','tasks','subtasks',
+        'weight','height','hydration','exercised','activity','activity_mins','mood','energy','sleep',
+        'social_type','actions','doctor','specialty','cost','cost_currency',
+        'symptoms','cure','recommended_by','administration','considerations','links'];
+      const clean = {};
+      allowed.forEach(k => { if (obj[k] !== undefined) clean[k] = obj[k]; });
+      return clean;
+    };
+    const cleanedData = cleanData(data);
+    const cleanedRecurrences = eventsToSave.map(cleanData);
+
     let savedFirst = null;
     if (evId) {
-      const {family_id:_, ...updateData} = data;
+      const {family_id:_, ...updateData} = cleanedData;
       const res = await sb.from('events').update(updateData).eq('id', evId).select().single();
-      if (res.error) { console.error('Update error', res.error); toast('Error saving.', true); return; }
+      if (res.error) {
+        console.error('Update error', res.error);
+        toast('Error saving: ' + (res.error.message||'unknown'), true);
+        return;
+      }
       A.events = A.events.map(e => e.id===evId ? res.data : e);
       savedFirst = res.data;
     } else {
-      // Insert all (base + recurrences)
-      const res = await sb.from('events').insert(eventsToSave).select();
-      if (res.error) { console.error('Insert error', res.error); toast('Error saving.', true); return; }
+      const res = await sb.from('events').insert(cleanedRecurrences).select();
+      if (res.error) {
+        console.error('Insert error', res.error);
+        toast('Error saving: ' + (res.error.message||'unknown'), true);
+        return;
+      }
       if (res.data) { A.events.push(...res.data); savedFirst = res.data[0]; }
     }
 
@@ -1362,7 +1471,7 @@ function viewEv(id) {
 
   if (ev.type === 'wellness') {
     body += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px">
-      ${[['⚖️','Weight',ev.weight&&`${ev.weight}kg`],['💧','Hydration',ev.hydration&&`${(ev.hydration/1000).toFixed(1)}L`],['😴','Sleep',ev.sleep&&`${ev.sleep}h`],['⚡','Energy',ev.energy&&`${ev.energy}%`],['😊','Mood',ev.mood]].filter(([,,v])=>v).map(([ic,k,v])=>`<div style="background:${T.parchment};border-radius:9px;padding:7px 11px"><div style="font-size:10px;color:${T.muted};font-weight:700">${ic} ${k}</div><div style="font-size:13px;font-weight:700">${v}</div></div>`).join('')}
+      ${[['⚖️','Weight',ev.weight&&`${ev.weight}kg`],['💧','Hydration',ev.hydration&&`${ev.hydration}L`],['😴','Sleep',ev.sleep&&`${ev.sleep}h`],['⚡','Energy',ev.energy&&`${ev.energy}%`],['😊','Mood',ev.mood]].filter(([,,v])=>v).map(([ic,k,v])=>`<div style="background:${T.parchment};border-radius:9px;padding:7px 11px"><div style="font-size:10px;color:${T.muted};font-weight:700">${ic} ${k}</div><div style="font-size:13px;font-weight:700">${v}</div></div>`).join('')}
       ${ev.exercised?`<div style="background:${T.sageLight};border-radius:9px;padding:7px 11px;grid-column:span 2"><div style="font-size:10px;color:${T.sage};font-weight:700">🏃 Exercise</div><div style="font-size:13px;font-weight:700">${ev.activity} · ${ev.activity_mins} min</div></div>`:''}
     </div>`;
   }
@@ -1418,20 +1527,35 @@ function viewEv(id) {
 }
 window.viewEv = viewEv;
 
-async function delEv(id) {
-  if (!confirm('Delete this entry?')) return;
+function delEv(id) {
+  const ev = A.events.find(e=>e.id===id);
+  if (!ev) return;
+  showModal('Delete Entry', `
+    <div style="text-align:center;padding:10px 0">
+      <div style="font-size:40px;margin-bottom:12px">🗑</div>
+      <div style="font-weight:700;font-size:16px;margin-bottom:8px">Delete this entry?</div>
+      <div style="font-size:13px;color:${T.muted};margin-bottom:20px">"${ev.title||ET[ev.type].label}" will be permanently removed.</div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-danger" style="flex:1" onclick="confirmDelEv('${id}')">Delete</button>
+      </div>
+    </div>`);
+}
+window.delEv = delEv;
+
+async function confirmDelEv(id) {
   const {error} = await sb.from('events').delete().eq('id', id);
   if (error) { toast('Error deleting.', true); return; }
   A.events = A.events.filter(e=>e.id!==id);
   closeModal(); toast('Entry deleted.'); renderCal();
 }
-window.delEv = delEv;
+window.confirmDelEv = confirmDelEv;
 
 
 
 // ── NOTEBOOK ──────────────────────────────────────────────────────────────────
 function renderNB(){
-  const notes=A.notes,groups=A.noteGroups;
+  const notes=getNotes(),groups=getGroups();
   const filtered=notes.filter(n=>{
     if(A.noteFGroup==='none'&&n.group_id)return false;
     if(A.noteFGroup!=='all'&&A.noteFGroup!=='none'&&n.group_id!==A.noteFGroup)return false;
@@ -1457,7 +1581,7 @@ function renderNB(){
 
   document.getElementById('page-notebook').innerHTML=`
     <div class="page-header">
-      <div class="family-label">${A.family?.name||''}</div>
+      <div class="family-label">${getFamily()?.name||''}</div>
       <div class="page-title">Notebook <button class="btn btn-primary btn-sm" onclick="openNote(null)">+ Note</button></div>
     </div>
     <div style="padding:10px 16px 0">
@@ -1494,6 +1618,7 @@ async function saveGroup(){
 window.saveGroup=saveGroup;
 
 function openNote(noteId){
+  if(isSampleMode()&&!noteId){toast('Switch to My Family to add real notes.',true);return;}
   const note=noteId?A.notes.find(n=>n.id===noteId):null;
   const groups=A.noteGroups;
   const cl=note?.checklist||[];
@@ -1617,8 +1742,50 @@ async function delNote(id){
 window.delNote=delNote;
 
 // ── MEDS ──────────────────────────────────────────────────────────────────────
+function exportMedsCSV() {
+  const dm = A.dailyMeds, s = symC();
+  const daysLeft = med => { const td=(med.member_ids||[]).length*(med.dose_per_day||1); if(!td)return null; return Math.floor((med.stock_today||0)/td); };
+  const lastsUntil = med => { const d=daysLeft(med); if(d===null)return '—'; const r=new Date(); r.setDate(r.getDate()+d); return fmt(r); };
+  const header = ['Medication','Members','Dose/day','Units/pkg','Price/pkg','In stock','Lasts until','New order (pkgs)','Order cost','Updated until'];
+  const rows = dm.map(med => {
+    const memNames = A.members.filter(m=>(med.member_ids||[]).includes(m.id)).map(m=>m.name).join('+');
+    const orderCost = med.new_order_pkgs ? `${s}${((parseInt(med.new_order_pkgs)||0)*med.price_per_pkg).toFixed(2)}` : '—';
+    const updStock = (med.stock_today||0)+((parseInt(med.new_order_pkgs)||0)*(med.units_per_pkg||0));
+    const updUntil = med.new_order_pkgs ? (() => { const td=(med.member_ids||[]).length*(med.dose_per_day||1); if(!td)return'—'; const r=new Date(); r.setDate(r.getDate()+Math.floor(updStock/td)); return fmt(r); })() : '—';
+    return [med.name, memNames, med.dose_per_day, med.units_per_pkg, `${s}${(med.price_per_pkg||0).toFixed(2)}`, med.stock_today, lastsUntil(med), med.new_order_pkgs||'', orderCost, updUntil];
+  });
+  const totalOrder = dm.reduce((sum,m)=>sum+(parseInt(m.new_order_pkgs)||0)*(m.price_per_pkg||0),0);
+  const grand = (totalOrder+(parseFloat(A.family?.transport_cost)||0)).toFixed(2);
+  rows.push(['GRAND TOTAL','','','','','','','',`${s}${grand}`,'']);
+  const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='kinship_meds_order.csv'; a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV downloaded! ✅');
+}
+window.exportMedsCSV = exportMedsCSV;
+
+function copyOrderToClipboard() {
+  const dm = A.dailyMeds.filter(m => m.new_order_pkgs && parseInt(m.new_order_pkgs) > 0);
+  if (!dm.length) { toast('No pending orders to copy.', true); return; }
+  const s = symC();
+  const totalOrder = dm.reduce((sum,m)=>sum+(parseInt(m.new_order_pkgs)||0)*(m.price_per_pkg||0),0);
+  const grand = (totalOrder+(parseFloat(A.family?.transport_cost)||0)).toFixed(2);
+  const lines = ['📦 MEDICATION ORDER — ' + (A.family?.name||'') + '\n' + new Date().toLocaleDateString('en-GB'), ''];
+  dm.forEach(m => {
+    const memNames = A.members.filter(mem=>(m.member_ids||[]).includes(mem.id)).map(mem=>mem.name).join(', ');
+    lines.push(`• ${m.name} × ${m.new_order_pkgs} pkg — ${s}${((parseInt(m.new_order_pkgs)||0)*(m.price_per_pkg||0)).toFixed(2)}${memNames?' ('+memNames+')':''}`);
+  });
+  lines.push('');
+  if (A.family?.transport_cost) lines.push(`Transport: ${s}${parseFloat(A.family.transport_cost).toFixed(2)}`);
+  lines.push(`TOTAL: ${s}${grand}`);
+  navigator.clipboard?.writeText(lines.join('\n')).then(() => toast('Order copied to clipboard! 📋')).catch(() => toast('Copy failed — try on a different browser', true));
+}
+window.copyOrderToClipboard = copyOrderToClipboard;
+
 function renderMeds(){
-  const dm=A.dailyMeds,om=A.occMeds,s=symC();
+  const dm=getDM(),om=getOM(),s=symC();
   const daysLeft=med=>{const td=(med.member_ids||[]).length*(med.dose_per_day||1);if(!td)return null;return Math.floor((med.stock_today||0)/td);};
   const lastsUntil=med=>{const d=daysLeft(med);return d===null?'—':fmt(addDays(todayD(),d));};
   const updStock=med=>(med.stock_today||0)+((parseInt(med.new_order_pkgs)||0)*(med.units_per_pkg||0));
@@ -1631,7 +1798,7 @@ function renderMeds(){
 
   document.getElementById('page-meds').innerHTML=`
     <div class="page-header">
-      <div class="family-label">${A.family?.name||''}</div>
+      <div class="family-label">${getFamily()?.name||''}</div>
       <div class="page-title">Meds & Supplies</div>
     </div>
     <div style="padding:10px 16px 0;display:flex;gap:8px;align-items:center">
@@ -1651,7 +1818,7 @@ function renderMeds(){
             ${dm.map((med,idx)=>{
               const dl=daysLeft(med);
               const st=dl===null?'ok':dl<=7?'critical':dl<=14?'low':'ok';
-              const rowMems=A.members.filter(m=>(med.member_ids||[]).includes(m.id));
+              const rowMems=getMembers().filter(m=>(med.member_ids||[]).includes(m.id));
               return`<tr>
                 <td><div style="font-weight:700">${med.name}</div>${med.shared?`<span class="chip" style="background:${T.skyLight};color:${T.sky};font-size:10px">Shared</span>`:''}<div style="font-size:11px;color:${T.muted}">${med.note||''}</div></td>
                 <td><div style="display:flex;gap:3px">${rowMems.map(m=>av(m,20)).join('')}</div></td>
@@ -1687,7 +1854,11 @@ function renderMeds(){
           </tbody>
         </table>
       </div>
-      <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="openAddDM()">+ Add medication</button>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="openAddDM()">+ Add medication</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportMedsCSV()">⬇️ Export CSV</button>
+        <button class="btn btn-secondary btn-sm" onclick="copyOrderToClipboard()">📋 Copy order</button>
+      </div>
     </div>
 
     <div style="padding:18px 16px 0">
@@ -1831,8 +2002,8 @@ window.saveOM=saveOM;
 
 // ── INSIGHTS ──────────────────────────────────────────────────────────────────
 function renderInsights(){
-  const wLogs=A.events.filter(e=>e.type==='wellness');
-  const hEvs=A.events.filter(e=>e.type==='health');
+  const wLogs=getEvents().filter(e=>e.type==='wellness');
+  const hEvs=getEvents().filter(e=>e.type==='health');
   const avg=(arr,k)=>{const v=arr.map(e=>parseFloat(e[k])).filter(v=>!isNaN(v)&&v>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;};
 
   // Pick challenge based on week number
@@ -1840,7 +2011,7 @@ function renderInsights(){
   const challenge=CHALLENGES[weekNum%CHALLENGES.length];
   const insights=genInsights(wLogs,hEvs);
 
-  const memberCards=A.members.map(member=>{
+  const memberCards=getMembers().map(member=>{
     const logs=wLogs.filter(e=>e.member_id===member.id);
     if(!logs.length)return'';
     const aSlp=avg(logs,'sleep'),aEn=avg(logs,'energy'),aHy=avg(logs,'hydration');
@@ -1877,7 +2048,7 @@ function renderInsights(){
 
   document.getElementById('page-insights').innerHTML=`
     <div class="page-header">
-      <div class="family-label">${A.family?.name||''}</div>
+      <div class="family-label">${getFamily()?.name||''}</div>
       <div class="page-title">Insights</div>
     </div>
     <div style="padding:12px 16px 0">
@@ -1919,7 +2090,7 @@ function renderInsights(){
 function genInsights(wLogs,hEvs){
   const ins=[];
   const avg=(arr,k)=>{const v=arr.map(e=>parseFloat(e[k])).filter(v=>!isNaN(v)&&v>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;};
-  A.members.forEach(m=>{
+  getMembers().forEach(m=>{
     const logs=wLogs.filter(e=>e.member_id===m.id);
     if(logs.length<2)return;
     const aSlp=avg(logs,'sleep'),aHy=avg(logs,'hydration'),aEn=avg(logs,'energy');
@@ -1937,7 +2108,7 @@ function genInsights(wLogs,hEvs){
 
 // ── SETTINGS ──────────────────────────────────────────────────────────────────
 function renderSettings(){
-  const fam=A.family,members=A.members;
+  const fam=getFamily(),members=getMembers();
   const TABS=[{id:'family',label:'👨‍👩‍👧‍👦 Family'},{id:'calendar',label:'🗓 Calendar'},{id:'notifs',label:'🔔 Notifications'}];
   let tc='';
 
@@ -1991,13 +2162,13 @@ function renderSettings(){
           <input type="checkbox" ${fam?.[key]?'checked':''} onchange="updateNotif('${key}',this.checked)">
           <span style="font-size:14px;font-weight:600">${label}</span>
         </label>`).join('')}
-      <p style="font-size:12px;color:${T.muted};margin-top:12px;line-height:1.5">Push notifications are available in the native mobile app. Settings are saved and will apply when the app launches.</p>
+      <p style="font-size:12px;color:${T.muted};margin-top:12px;line-height:1.5;background:${T.honeyLight};border-radius:8px;padding:8px 10px;">🔔 Push notifications are coming in the Kinship mobile app. Your preferences are saved and will activate automatically when the app launches.</p>
     </div>`;
   }
 
   document.getElementById('page-settings').innerHTML=`
     <div class="page-header">
-      <div class="family-label">${fam?.name||''}</div>
+      <div class="family-label">${getFamily()?.name||''}</div>
       <div class="page-title">Settings</div>
     </div>
     <div class="tabs">${TABS.map(t=>`<button class="tab ${A.settingsTab===t.id?'active':''}" onclick="A.settingsTab='${t.id}';renderSettings()">${t.label}</button>`).join('')}</div>
@@ -2092,19 +2263,49 @@ async function sendInvite(email,memberId){
   if(error){console.error('Invite error',error);}
   const token=data?.token||'demo';
   const link=`${window.location.origin}${window.location.pathname}?invite=${token}`;
-  showModal('Invite Sent 📧',`
+  showModal('Invite Link Ready 🔗',`
     <div style="text-align:center;padding:10px 0">
       <div style="font-size:42px;margin-bottom:12px">📧</div>
-      <div style="font-weight:700;font-size:16px;margin-bottom:8px">Invite link ready!</div>
+      <div style="font-weight:700;font-size:16px;margin-bottom:8px">Invite link generated!</div>
       <div style="font-size:13px;color:${T.muted};margin-bottom:14px">Share this link with <b>${email}</b> to give them access to <b>${A.family.name}</b>.</div>
       <div style="background:${T.parchment};border-radius:9px;padding:10px;font-size:11px;word-break:break-all;color:${T.ink};margin-bottom:14px;text-align:left">${link}</div>
       <button class="btn btn-primary btn-full" onclick="navigator.clipboard?.writeText('${link}').then(()=>toast('Link copied! 📋'))">📋 Copy invite link</button>
-      <div style="font-size:11px;color:${T.muted};margin-top:12px">In the full app, this will be sent automatically by email.</div>
+      <div style="font-size:11px;color:${T.muted};margin-top:12px">Copy this link and send it manually to ${email}. They will use it to join ${A.family.name}. Email sending will be added in a future update.</div>
     </div>`);
 }
 window.sendInvite=sendInvite;
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────
+// ── SAMPLE MODE ───────────────────────────────────────────────────────────────
+function toggleSampleMode() {
+  _sampleMode = !_sampleMode;
+  const btn = document.getElementById('sample-btn');
+  if (btn) {
+    btn.style.background = _sampleMode ? '#5e8b62' : 'var(--honey-light)';
+    btn.style.color = _sampleMode ? '#fff' : 'var(--honey)';
+    btn.style.border = _sampleMode ? '1px solid #5e8b62' : '1px solid var(--honey)44';
+    btn.textContent = _sampleMode ? '🏠 My Family' : '📋 Sample';
+  }
+  const badge = document.getElementById('fam-badge');
+  if (badge) badge.textContent = _sampleMode ? 'Sample Family' : (A.family?.name||'');
+  renderPage();
+}
+window.toggleSampleMode = toggleSampleMode;
+
+function renderPage() {
+  const pages = {calendar:renderCal,notebook:renderNB,meds:renderMeds,insights:renderInsights,settings:renderSettings};
+  pages[A.page]?.();
+}
+
+function getFamily()  { return _sampleMode ? SD_FAMILY : A.family; }
+function getMembers() { return _sampleMode ? SD_MEMBERS : A.members; }
+function getEvents()  { return _sampleMode ? SD_EVENTS : A.events; }
+function getNotes()   { return _sampleMode ? SD_NOTES : A.notes; }
+function getGroups()  { return _sampleMode ? SD_GROUPS : A.noteGroups; }
+function getDM()      { return _sampleMode ? SD_DM : A.dailyMeds; }
+function getOM()      { return _sampleMode ? SD_OM : A.occMeds; }
+function isSampleMode() { return _sampleMode; }
+
 function showAuth(){
   document.getElementById('loading-screen').style.display='none';
   document.getElementById('root').style.display='none';
