@@ -392,9 +392,17 @@ async function initApp(user){
   document.getElementById('root').style.display='flex';
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('fam-badge').textContent=A.family?.name||'';
-  // Show sample data button
+  // Show sample button only for users with NO real family data yet
   const sBtn = document.getElementById('sample-btn');
-  if (sBtn) sBtn.style.display = 'block';
+  const hasRealData = A.events.length > 0 || A.members.length > 1 || A.notes.length > 0;
+  if (sBtn) {
+    // Show sample if no real data OR if first login flag set
+    const isFirstLogin = !localStorage.getItem('ks_seen_sample');
+    if (!hasRealData || isFirstLogin) {
+      sBtn.style.display = 'block';
+      if (isFirstLogin) localStorage.setItem('ks_seen_sample','1');
+    }
+  }
   goTo('calendar');
   if(A.showOB)renderOB();
 }
@@ -494,20 +502,38 @@ function renderCal(){
           const mem=A.members.find(m=>m.id===mid);
           return mem?mem.color:'#5a5248';
         };
-        // Check if this day is a continuation of a multi-day event
+        const dayOfWeek=(new Date(vY,vM,d).getDay()+6)%7; // 0=Mon..6=Sun
+        const isWeekend=dayOfWeek>=5;
+        const dayBg=isT?T.sageLight:isWeekend?T.parchment+'bb':'#fff';
         const dt=new Date(vY,vM,d);
-        const allDaySpan=filtered.filter(e=>{
-          if(!e.end_date||isSameDay(e.date,e.end_date))return false;
-          const s=new Date(e.date);s.setHours(0,0,0,0);
-          const en=new Date(e.end_date);en.setHours(23,59,59,0);
-          return dt>=s&&dt<=en&&!isSameDay(e.date,dt);
+        // Continuation events — started before today, ends today or later
+        const spanCont=filtered.filter(e=>{
+          if(!e.end_date)return false;
+          const eS=new Date(e.date);eS.setHours(0,0,0,0);
+          const eE=new Date(e.end_date);eE.setHours(23,59,59,0);
+          return dt>eS&&dt<=eE;
         });
-        return`<div onclick="calClick(${d})" style="min-height:80px;padding:3px 2px 4px;border-radius:9px;background:${isT?T.sageLight:de.length||allDaySpan.length?T.surface:T.parchment+'22'};border:1px solid ${isT?T.sageMid:T.border};cursor:pointer;overflow:hidden">
+        const isLastDay=e=>e.end_date&&isSameDay(e.end_date,dt);
+        // Regular events on this day (not continuations)
+        const dayEvents=de.filter(e=>!spanCont.find(s=>s.id===e.id));
+        // Multi-day starts (start today, end later)
+        const isMultiStart=e=>e.end_date&&!isSameDay(e.date,e.end_date)&&isSameDay(e.date,dt);
+        return`<div onclick="calClick(${d})" style="min-height:80px;padding:3px 2px 4px;border-radius:9px;background:${dayBg};border:1px solid ${isT?T.sageMid:T.border};cursor:pointer;overflow:hidden">
           <div style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${isT?T.sage:'transparent'};color:${isT?'#fff':T.ink};font-size:11px;font-weight:${isT?800:600};margin:0 auto 3px">${d}</div>
           <div style="display:flex;flex-direction:column;gap:2px">
-            ${allDaySpan.slice(0,1).map(e=>{const pc=pillC(e);return`<div style="background:${pc}33;margin:0 -2px;padding:2px 4px;font-size:9px;font-weight:700;color:${pc};line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;border-top:2px solid ${pc};border-bottom:2px solid ${pc}"> ${shortT(e)}</div>`;}).join('')}
-            ${de.slice(0,3-allDaySpan.length).map(e=>{const pc=pillC(e);return`<div style="background:${pc}22;border-left:2px solid ${pc};border-radius:0 3px 3px 0;padding:1px 2px;font-size:9px;font-weight:700;color:${pc};line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="${e.title||ET[e.type].label}">${ET[e.type].icon} ${shortT(e)}</div>`;}).join('')}
-            ${de.length+allDaySpan.length>3?`<div style="font-size:8px;color:${T.muted};font-weight:700;text-align:center;padding-top:1px">+${de.length+allDaySpan.length-3} more</div>`:''}
+            ${spanCont.slice(0,1).map(e=>{
+              const pc=pillC(e);
+              const isLast=isLastDay(e);
+              // Continuation bar: full width, solid colour, text only on last day
+              return`<div onclick="event.stopPropagation();viewEv('${e.id}')" style="background:${pc};margin:0 -2px;padding:2px 3px;font-size:9px;font-weight:700;color:#fff;line-height:1.4;white-space:nowrap;overflow:hidden;border-radius:${isLast?'0 4px 4px 0':'0'};opacity:.82;cursor:pointer">${isLast?shortT(e):''}</div>`;
+            }).join('')}
+            ${dayEvents.slice(0,3-spanCont.length).map(e=>{
+              const pc=pillC(e);
+              const ms=isMultiStart(e);
+              // Multi-day start: pill extends right (no right border-radius)
+              return`<div style="background:${ms?pc:pc+'22'};border-left:2px solid ${pc};border-radius:${ms?'4px 0 0 4px':'0 3px 3px 0'};margin:${ms?'0 -2px 0 0':'0'};padding:1px 2px;font-size:9px;font-weight:700;color:${ms?'#fff':pc};line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="${e.title||ET[e.type].label}">${ET[e.type].icon} ${shortT(e)}</div>`;
+            }).join('')}
+            ${dayEvents.length+spanCont.length>3?`<div style="font-size:8px;color:${T.muted};font-weight:700;text-align:center;padding-top:1px">+${dayEvents.length+spanCont.length-3} more</div>`:''}
           </div>
         </div>`;
       }).join('')}
@@ -555,13 +581,7 @@ function renderCal(){
     </div>`;
   }
 
-  const searchRes=A.calSearch&&filtered.length>0?`<div style="padding:0 16px">
-    <div style="font-size:11px;font-weight:700;color:${T.muted};margin-bottom:8px;text-transform:uppercase">${filtered.length} result${filtered.length!==1?'s':''}</div>
-    ${filtered.map(e=>`<div onclick="viewEv('${e.id}')" class="card" style="padding:10px 13px;margin-bottom:7px;cursor:pointer;display:flex;align-items:center;gap:10px">
-      <span style="font-size:17px">${ET[e.type].icon}</span>
-      <div><div style="font-weight:700;font-size:13px">${e.title||ET[e.type].label}</div><div style="font-size:11px;color:${T.muted}">${fmt(e.date)}</div></div>
-    </div>`).join('')}
-  </div>`:'';
+  const searchRes=''; // Results rendered dynamically by renderCalResults()
 
   document.getElementById('page-calendar').innerHTML=`
     <div class="page-header">
@@ -573,17 +593,19 @@ function renderCal(){
       <button onclick="A.calDate=new Date();renderCal()" style="padding:4px 12px;border-radius:99px;border:1.5px solid ${T.border};background:#fff;color:${T.muted};font-weight:700;font-size:12px;cursor:pointer;margin-left:auto">Today</button>
     </div>
     <div style="padding:7px 16px 0;display:flex;gap:6px;overflow-x:auto">
-      <select class="sel" style="width:auto;font-size:12px;padding:5px 8px;border-radius:20px;flex-shrink:0" onchange="A.calFType=this.value;renderCal()">
+      <select class="sel" style="width:auto;font-size:12px;padding:5px 8px;border-radius:20px;flex-shrink:0" onchange="A.calFType=this.value;renderCal();setTimeout(renderCalResults,50)">
         <option value="all">All types</option>
         ${Object.entries(ET).map(([k,v])=>`<option value="${k}"${A.calFType===k?' selected':''}>${v.icon} ${v.label}</option>`).join('')}
       </select>
-      <select class="sel" style="width:auto;font-size:12px;padding:5px 8px;border-radius:20px;flex-shrink:0" onchange="A.calFMember=this.value;renderCal()">
+      <select class="sel" style="width:auto;font-size:12px;padding:5px 8px;border-radius:20px;flex-shrink:0" onchange="A.calFMember=this.value;renderCal();setTimeout(renderCalResults,50)">
         <option value="all">All members</option>
         ${getMembers().map(m=>`<option value="${m.id}"${A.calFMember===m.id?' selected':''}>${m.name}</option>`).join('')}
       </select>
     </div>
     <div style="padding:6px 16px 0">
-      <input class="inp" placeholder="🔍  Search entries…" value="${A.calSearch}" oninput="A.calSearch=this.value;renderCal()">
+      <input class="inp" id="cal-search-inp" placeholder="🔍  Search entries…" value="${A.calSearch}" 
+        oninput="A.calSearch=this.value;clearTimeout(A._sT);A._sT=setTimeout(()=>renderCalResults(),400)"
+        onkeydown="if(event.key==='Enter'){clearTimeout(A._sT);renderCalResults();}">
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 0">
       <button onclick="A.calDate=new Date(${vY},${vM-1},1);renderCal()" style="background:${T.parchment};border:1px solid ${T.border};border-radius:9px;width:33px;height:33px;font-size:18px;cursor:pointer">‹</button>
@@ -591,27 +613,94 @@ function renderCal(){
       <button onclick="A.calDate=new Date(${vY},${vM+1},1);renderCal()" style="background:${T.parchment};border:1px solid ${T.border};border-radius:9px;width:33px;height:33px;font-size:18px;cursor:pointer">›</button>
     </div>
     <div style="padding:8px 16px">${grid}</div>
-    ${searchRes}
+    <div id='cal-search-results'></div>
   `;
 }
 window.renderCal=renderCal;
 
+function renderCalResults(){
+  // Re-render just the search results section without rebuilding the whole calendar
+  const filtered=getEvents().filter(e=>{
+    if(A.calFType!=='all'&&e.type!==A.calFType)return false;
+    if(A.calFMember!=='all'&&!(e.participants||[]).includes(A.calFMember)&&e.member_id!==A.calFMember)return false;
+    if(A.calSearch){const q=A.calSearch.toLowerCase();if(![e.title,e.description,e.location,e.activity,...(e.tags||[])].filter(Boolean).join(' ').toLowerCase().includes(q))return false;}
+    return true;
+  });
+  const fmtTime=d=>{if(!d)return'';const x=new Date(d);return x.getHours().toString().padStart(2,'0')+':'+x.getMinutes().toString().padStart(2,'0');};
+  const memColor=e=>{
+    if(e.participants_all_family||(!e.member_id&&!(e.participants?.length)))return '#5a5248';
+    const mid=e.member_id||(e.participants?.[0]);
+    const m=getMembers().find(m=>m.id===mid);
+    return m?m.color:'#5a5248';
+  };
+  // Find or create results container
+  let res = document.getElementById('cal-search-results');
+  if (!res) {
+    res = document.createElement('div');
+    res.id = 'cal-search-results';
+    document.getElementById('page-calendar').appendChild(res);
+  }
+  if (!A.calSearch && A.calFType==='all' && A.calFMember==='all') {
+    res.innerHTML = '';
+    return;
+  }
+  res.innerHTML = filtered.length === 0
+    ? `<div style="padding:16px;text-align:center;color:${T.muted};font-size:13px">No results found</div>`
+    : `<div style="padding:0 16px 16px">
+        <div style="font-size:11px;font-weight:700;color:${T.muted};margin-bottom:8px;text-transform:uppercase">${filtered.length} result${filtered.length!==1?'s':''}</div>
+        ${filtered.map(e=>{
+          const mc=memColor(e);
+          return`<div style="display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:11px;background:#fff;border:1.5px solid ${mc}33;border-left:4px solid ${mc};margin-bottom:7px">
+            <div onclick="viewEv('${e.id}')" style="flex:1;cursor:pointer">
+              <div style="font-weight:700;font-size:13px">${e.title||ET[e.type].label}</div>
+              <div style="font-size:11px;color:${T.muted}">${ET[e.type].icon} ${fmt(e.date)}${e.all_day?'':', '+fmtTime(e.date)}</div>
+            </div>
+            ${isSampleMode()?'':`<div style="display:flex;gap:5px">
+              <button onclick="openEvForm('${e.type}','${e.id}',null)" style="background:#f5f2ed;border:1px solid #e0d8cc;border-radius:7px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#7a7060">✏️</button>
+              <button onclick="delEv('${e.id}')" style="background:#f0d4de;border:1px solid #b8507044;border-radius:7px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#b85070">🗑</button>
+            </div>`}
+          </div>`;
+        }).join('')}
+      </div>`;
+}
+window.renderCalResults=renderCalResults;
+
 function calClick(d){
   const vY=A.calDate.getFullYear(),vM=A.calDate.getMonth();
   const dt=new Date(vY,vM,d);
-  const de=A.events.filter(e=>isSameDay(e.date,dt));
+  const de=getEvents().filter(e=>isSameDay(e.date,dt));
   if(de.length)showDayModal(dt,de);
   else showPicker(dt);
 }
 window.calClick=calClick;
 
 function showDayModal(dt,de){
-  showModal(`${DNF[dt.getDay()]}, ${fmt(dt)}`,
-    `${de.map(e=>`<div onclick="closeModal();setTimeout(()=>viewEv('${e.id}'),50)" style="display:flex;align-items:center;gap:12px;padding:12px 13px;border-radius:11px;background:${ET[e.type].bg};margin-bottom:8px;cursor:pointer">
-      <span style="font-size:18px">${ET[e.type].icon}</span>
-      <div><div style="font-weight:700">${e.title||ET[e.type].label}</div>${e.location?`<div style="font-size:12px;color:${T.muted}">📍 ${e.location}</div>`:''}</div>
-    </div>`).join('')}
-    <button class="btn btn-primary btn-full" style="margin-top:4px" onclick="closeModal();showPicker(new Date(${dt.getTime()}))">+ Add to this day</button>`
+  const memColor=e=>{
+    if(e.participants_all_family||(!e.member_id&&!(e.participants?.length)))return '#5a5248';
+    const mid=e.member_id||(e.participants?.[0]);
+    const m=getMembers().find(m=>m.id===mid);
+    return m?m.color:'#5a5248';
+  };
+  const fmtTime=d=>{if(!d)return'';const x=new Date(d);return x.getHours().toString().padStart(2,'0')+':'+x.getMinutes().toString().padStart(2,'0');};
+  showModal(`${DNF[(dt.getDay()+6)%7]}, ${fmt(dt)}`,
+    `${de.map(e=>{
+      const mc=memColor(e);
+      const timeStr=e.all_day?'All day':fmtTime(e.date);
+      return`<div style="display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:11px;background:#fff;border:1.5px solid ${mc}33;border-left:4px solid ${mc};margin-bottom:8px">
+        <div onclick="closeModal();setTimeout(()=>viewEv('${e.id}'),50)" style="flex:1;cursor:pointer;display:flex;align-items:center;gap:8px">
+          <span style="font-size:16px">${ET[e.type].icon}</span>
+          <div>
+            <div style="font-weight:700;font-size:13px;color:#1e1b16">${e.title||ET[e.type].label}</div>
+            <div style="font-size:11px;color:#7a7060">${timeStr}${e.location?' · 📍'+e.location:''}</div>
+          </div>
+        </div>
+        ${isSampleMode()?'':`<div style="display:flex;gap:5px">
+          <button onclick="closeModal();openEvForm('${e.type}','${e.id}',null)" style="background:#f5f2ed;border:1px solid #e0d8cc;border-radius:7px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#7a7060">✏️</button>
+          <button onclick="closeModal();delEv('${e.id}')" style="background:#f0d4de;border:1px solid #b8507044;border-radius:7px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#b85070">🗑</button>
+        </div>`}
+      </div>`;
+    }).join('')}
+    ${isSampleMode()?'':`<button class="btn btn-primary btn-full" style="margin-top:4px" onclick="closeModal();showPicker(new Date(${dt.getTime()}))">+ Add to this day</button>`}`
   );
 }
 
@@ -642,12 +731,7 @@ function showPicker(dt){
 window.showPicker=showPicker;
 
 
-// ── EVENT TYPES ───────────────────────────────────────────────────────────────
-// Updated: social icon changed, health subtypes refined
-const ET_OVERRIDES = {
-  social: {label:'Social Event', icon:'🏙️', color:'#3a7ca5', bg:'#d0e4f0', desc:'Gatherings, outings, celebrations'},
-};
-Object.assign(ET, ET_OVERRIDES);
+// ET is defined in constants above with 👥 social icon
 
 const SOCIAL_TYPES = ['Birthday','Family time','Work gathering','Party','Entertainment','Education','Other'];
 const MEDICAL_SPECIALTIES = [
@@ -761,9 +845,8 @@ function getAdminRows(containerId) {
 }
 
 // ── SYNC ACTIONS TO NOTEBOOK ──────────────────────────────────────────────────
-async function syncActionsToNotebook(eventTitle, actions, eventId) {
+async function syncActionsToNotebook(eventTitle, actions, eventId, memberId) {
   if (!A.family || !actions?.length) return;
-  // Find or create "Calendar Actions" group
   let group = A.noteGroups.find(g => g.name === '📅 Calendar Actions');
   if (!group) {
     const { data } = await sb.from('note_groups').insert({
@@ -772,7 +855,6 @@ async function syncActionsToNotebook(eventTitle, actions, eventId) {
     if (data) { A.noteGroups.push(data); group = data; }
   }
   if (!group) return;
-  // Check if note for this event already exists
   let note = A.notes.find(n => n.group_id === group.id && n.title === eventTitle);
   const noteData = {
     family_id: A.family.id,
@@ -780,6 +862,7 @@ async function syncActionsToNotebook(eventTitle, actions, eventId) {
     content: `Actions from calendar event: ${eventTitle}`,
     color: '#f5e4c4',
     group_id: group.id,
+    member_id: memberId || null,
     pinned: false,
     checklist: actions,
   };
@@ -805,7 +888,9 @@ function getLastWellness(memberId) {
 function openEvForm(type, evId, dateTs, duplicateId) {
   const ev = evId ? A.events.find(e=>e.id===evId) : null;
   const dupEv = duplicateId ? A.events.find(e=>e.id===duplicateId) : null;
-  const source = dupEv || ev; // source for pre-filling fields
+  // If health override set (from type switcher), use it
+  const healthOverride = (type === 'health' && A._healthOverride) ? A._healthOverride : null;
+  const source = healthOverride || dupEv || ev; // source for pre-filling fields
   const cfg = ET[type];
 
   // DATE/TIME DEFAULTS
@@ -847,54 +932,30 @@ function openEvForm(type, evId, dateTs, duplicateId) {
     <div style="display:flex;gap:7px"><input class="inp" id="ef-ntag" placeholder="Custom tag…" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addTag();}"><button class="btn btn-secondary btn-sm" onclick="addTag()">Add</button></div>`;
 
   // Helper: recurrence with end options
-  const recurrenceFields = (rec, endType, endCount, endDate2) => `
+  const recurrenceFields = (rec, endType, endCount, endDate2) => {
+      const eType = endType || 'count';
+      const showEnd = rec && rec !== 'None';
+      return `
     <div class="form-row"><label class="lbl">Recurrence</label>
       <select class="sel" id="ef-rec" onchange="updateRecurrenceEnd(this.value)">
         ${['None','Daily','Weekly','Bi-weekly','Monthly','Yearly'].map(r=>`<option${(rec||'None')===r?' selected':''}>${r}</option>`).join('')}
       </select></div>
-    <div id="ef-rec-end" style="display:${rec&&rec!=='None'?'block':'none'}">
-      <div class="form-row"><label class="lbl">End recurrence</label>
+    <div id="ef-rec-end" style="display:${showEnd?'block':'none'}">
+      <div class="form-row"><label class="lbl">End recurrence <span style="color:#b85070">*</span></label>
         <select class="sel" id="ef-recend-type" onchange="updateRecurrenceEndType(this.value)">
-          <option value="none"${(endType||'none')==='none'?' selected':''}>Repeat forever</option>
-          <option value="count"${endType==='count'?' selected':''}>After number of times</option>
-          <option value="date"${endType==='date'?' selected':''}>Until a specific date</option>
+          <option value="count"${eType==='count'?' selected':''}>After number of times</option>
+          <option value="date"${eType==='date'?' selected':''}>Until a specific date</option>
+          <option value="none"${eType==='none'?' selected':''}>Repeat for 1 year</option>
         </select></div>
-      <div id="ef-recend-count" style="display:${endType==='count'?'block':'none'}" class="form-row">
-        <label class="lbl">Number of recurrences</label>
+      <div id="ef-recend-count" style="display:${eType!=='date'&&eType!=='none'?'block':'none'}" class="form-row">
+        <label class="lbl">Number of occurrences <span style="color:#b85070">*</span></label>
         <input class="inp" type="number" id="ef-recend-n" min="1" value="${endCount||''}" placeholder="e.g. 4">
       </div>
-      <div id="ef-recend-date" style="display:${endType==='date'?'block':'none'}" class="form-row">
-        <label class="lbl">Repeat until</label>
+      <div id="ef-recend-date" style="display:${eType==='date'?'block':'none'}" class="form-row">
+        <label class="lbl">Repeat until <span style="color:#b85070">*</span></label>
         <input class="inp" type="date" id="ef-recend-d" value="${endDate2||''}">
       </div>
-    </div>`;
-
-  // Helper: date/time fields
-  const dateTimeFields = (allDay, sDate, sTime, eDate, eTime) => `
-    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-bottom:10px;cursor:pointer">
-      <input type="checkbox" id="ef-allday" ${allDay?'checked':''} onchange="toggleAllDay(this.checked)"> All day event
-    </label>
-    <div class="grid2" style="margin-bottom:0">
-      <div class="form-row" style="margin:0"><label class="lbl">Start Date</label>
-        <input class="inp" type="date" id="ef-date" value="${sDate}" onchange="syncEndDate(this.value)"></div>
-      <div class="form-row" style="margin:0" id="ef-stime-row" style="${allDay?'display:none':''}"><label class="lbl">Start Time</label>
-        <input class="inp" type="time" id="ef-stime" value="${sTime}" onchange="syncEndTime(this.value)"></div>
-    </div>
-    <div class="grid2">
-      <div class="form-row" style="margin:0"><label class="lbl">End Date</label>
-        <input class="inp" type="date" id="ef-enddate" value="${eDate}"></div>
-      <div class="form-row" style="margin:0" id="ef-etime-row" style="${allDay?'display:none':''}"><label class="lbl">End Time</label>
-        <input class="inp" type="time" id="ef-etime" value="${eTime}"></div>
-    </div>`;
-
-  // Helper: link attachments
-  const attachmentField = () => `
-    <div class="form-row"><label class="lbl">Links & Documents</label>
-      <div id="ef-links" style="display:flex;flex-direction:column;gap:6px">
-        ${(source?.links||[]).map((lnk,i)=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-          <input class="inp" value="${lnk.label||''}" placeholder="Label (e.g. Test results)" style="flex:1;font-size:12px;padding:5px 8px" id="ll-${i}">
-          <input class="inp" value="${lnk.url||''}" placeholder="https://…" style="flex:1.5;font-size:12px;padding:5px 8px" id="lu-${i}">
-          <button type="button" onclick="this.closest('div').remove()" style="background:none;border:none;color:${T.muted};font-size:16px;cursor:pointer;padding:4px">×</button>
+    </div>`;};font-size:16px;cursor:pointer;padding:4px">×</button>
         </div>`).join('')}
       </div>
       <button type="button" onclick="addLinkRow()" style="font-size:12px;color:${T.sage};background:none;border:1px dashed ${T.sageMid};border-radius:8px;padding:4px 10px;cursor:pointer;font-weight:600;margin-top:4px">🔗 Add link</button>
@@ -930,7 +991,8 @@ function openEvForm(type, evId, dateTs, duplicateId) {
       <div class="grid2">
         <div class="form-row" style="margin:0"><label class="lbl">Energy (%)</label><input class="inp" type="number" min="0" max="100" id="ef-en" placeholder="75" value="${source?.energy||''}"></div>
         <div class="form-row" style="margin:0"><label class="lbl">Sleep (hrs)</label><input class="inp" type="number" step="0.5" id="ef-sl" placeholder="7.5" value="${source?.sleep||''}"></div>
-      </div>`;
+      </div>
+      <div class="form-row"><label class="lbl">Comments</label><textarea class="inp" id="ef-wcomment" rows="2" placeholder="How are you feeling? Any notes…" style="resize:none">${source?.description||''}</textarea></div>`;
 
   // ── SOCIAL ──
   } else if (type === 'social') {
@@ -1088,34 +1150,31 @@ function openEvForm(type, evId, dateTs, duplicateId) {
 window.openEvForm = openEvForm;
 
 function reloadHealthForm(newType, evId, dateTs) {
-  // Re-open with new health sub-type selected
-  const ev = evId ? A.events.find(e=>e.id===evId) : null;
-  // Temporarily patch the appt_type on a mock
-  const mock = ev ? {...ev, appt_type: newType} : null;
-  if (mock) {
-    A._tempHealthType = newType;
-    openEvFormWithType('health', evId, dateTs, newType);
-  } else {
-    A._tempHealthType = newType;
-    openEvFormWithType('health', null, dateTs, newType);
-  }
+  // Store the currently entered data before reloading
+  const title = document.getElementById('ef-title')?.value || '';
+  const loc = document.getElementById('ef-loc')?.value || '';
+  const desc = document.getElementById('ef-desc')?.value || '';
+  // Re-open form with new type, preserving entered data
+  A._pendingHealthType = newType;
+  A._pendingHealthData = { title, location: loc, description: desc };
+  openEvFormHealth(newType, evId, dateTs);
 }
 window.reloadHealthForm = reloadHealthForm;
 
+function openEvFormHealth(apptType, evId, dateTs) {
+  // Build a fake event object or use real one, with overridden appt_type
+  const ev = evId ? getEvents().find(e=>e.id===evId) : null;
+  const pending = A._pendingHealthData || {};
+  const overrideEv = ev ? {...ev, appt_type: apptType, ...pending} : {appt_type: apptType, ...pending};
+  // Temporarily store so openEvForm picks it up
+  A._healthOverride = overrideEv;
+  openEvForm('health', evId, dateTs);
+  delete A._healthOverride;
+}
+window.openEvFormHealth = openEvFormHealth;
+
 function openEvFormWithType(type, evId, dateTs, forceApptType) {
-  // Temporarily override appt_type for the event
-  const ev = evId ? A.events.find(e=>e.id===evId) : null;
-  if (ev && forceApptType) {
-    const saved = ev.appt_type;
-    ev.appt_type = forceApptType;
-    openEvForm(type, evId, dateTs);
-    ev.appt_type = saved;
-  } else {
-    // New event with forced type — store in a temp
-    A._forceApptType = forceApptType;
-    openEvForm(type, null, dateTs);
-    delete A._forceApptType;
-  }
+  openEvFormHealth(forceApptType, evId, dateTs);
 }
 window.openEvFormWithType = openEvFormWithType;
 
@@ -1151,7 +1210,7 @@ function updateRecurrenceEnd(recVal) {
 window.updateRecurrenceEnd = updateRecurrenceEnd;
 
 function updateRecurrenceEndType(val) {
-  document.getElementById('ef-recend-count').style.display = val==='count'?'block':'none';
+  document.getElementById('ef-recend-count').style.display = (val==='count')?'block':'none';
   document.getElementById('ef-recend-date').style.display = val==='date'?'block':'none';
 }
 window.updateRecurrenceEndType = updateRecurrenceEndType;
@@ -1234,6 +1293,22 @@ function addTag() {
 window.addTag = addTag;
 
 // ── SAVE EVENT ────────────────────────────────────────────────────────────────
+// Build a local datetime ISO string that preserves user's intended time
+function localDT(dateStr, timeStr) {
+  if (!dateStr) return new Date().toISOString();
+  const t = timeStr || '12:00';
+  // Create date in local time, then get ISO with offset
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const [h,mi] = t.split(':').map(Number);
+  const local = new Date(y, m-1, d, h, mi, 0);
+  // Format as ISO preserving local time
+  const off = -local.getTimezoneOffset();
+  const sign = off >= 0 ? '+' : '-';
+  const pad = n => String(Math.abs(n)).padStart(2,'0');
+  return `${dateStr}T${pad(h)}:${pad(mi)}:00${sign}${pad(Math.floor(Math.abs(off)/60))}:${pad(Math.abs(off)%60)}`;
+}
+window.localDT = localDT;
+
 async function saveEv(type, evId, dateTs) {
   if (!A.family) { toast('Set up your family first.', true); return; }
   let data = { family_id: A.family.id, type };
@@ -1257,6 +1332,7 @@ async function saveEv(type, evId, dateTs) {
       data.mood = document.getElementById('ef-mood')?.value || null;
       data.energy = parseInt(document.getElementById('ef-en')?.value) || null;
       data.sleep = parseFloat(document.getElementById('ef-sl')?.value) || null;
+      data.description = document.getElementById('ef-wcomment')?.value || null;
 
     } else if (type === 'task') {
       data.title = document.getElementById('ef-title')?.value || '';
@@ -1279,14 +1355,23 @@ async function saveEv(type, evId, dateTs) {
       const stV = allDay ? '12:00' : (document.getElementById('ef-stime')?.value || '12:00');
       const endDateV = document.getElementById('ef-enddate')?.value || dateV;
       const etV = allDay ? '12:00' : (document.getElementById('ef-etime')?.value || '12:00');
-      data.date = dateV ? `${dateV}T${stV}:00` : new Date().toISOString();
-      data.end_date = endDateV ? `${endDateV}T${etV}:00` : null;
+      data.date = dateV ? localDT(dateV, stV) : new Date().toISOString();
+      data.end_date = endDateV ? localDT(endDateV, etV) : null;
       data.location = document.getElementById('ef-loc')?.value || null;
       data.social_type = document.getElementById('ef-social-type')?.value || null;
       data.recurrence = document.getElementById('ef-rec')?.value || 'None';
-      data.recurrence_end_type = document.getElementById('ef-recend-type')?.value || 'none';
+      data.recurrence_end_type = document.getElementById('ef-recend-type')?.value || 'count';
       data.recurrence_end_count = parseInt(document.getElementById('ef-recend-n')?.value) || null;
       data.recurrence_end_date = document.getElementById('ef-recend-d')?.value || null;
+      // Validate recurrence end
+      if (data.recurrence !== 'None') {
+        if (data.recurrence_end_type === 'count' && !data.recurrence_end_count) {
+          toast('Please enter the number of times this event should repeat.', true); return;
+        }
+        if (data.recurrence_end_type === 'date' && !data.recurrence_end_date) {
+          toast('Please enter the date until which this event should repeat.', true); return;
+        }
+      }
       data.actions = getChecklist('ef-actions');
       data.description = document.getElementById('ef-desc')?.value || null;
       data.tags = Array.from(document.querySelectorAll('#ef-tags button[data-sel="true"]')).map(b=>b.dataset.tag).filter(Boolean);
@@ -1312,8 +1397,8 @@ async function saveEv(type, evId, dateTs) {
         const stV = allDay ? '12:00' : (document.getElementById('ef-stime')?.value || '12:00');
         const endDateV = document.getElementById('ef-enddate')?.value || dateV;
         const etV = allDay ? '12:00' : (document.getElementById('ef-etime')?.value || '12:00');
-        data.date = dateV ? `${dateV}T${stV}:00` : new Date().toISOString();
-        data.end_date = endDateV ? `${endDateV}T${etV}:00` : null;
+        data.date = dateV ? localDT(dateV, stV) : new Date().toISOString();
+        data.end_date = endDateV ? localDT(endDateV, etV) : null;
         data.location = document.getElementById('ef-loc')?.value || null;
         data.doctor = document.getElementById('ef-doctor')?.value || null;
         data.specialty = document.getElementById('ef-specialty')?.value || null;
@@ -1323,9 +1408,17 @@ async function saveEv(type, evId, dateTs) {
         data.description = document.getElementById('ef-desc')?.value || null;
         data.links = getLinks();
         data.recurrence = document.getElementById('ef-rec')?.value || 'None';
-        data.recurrence_end_type = document.getElementById('ef-recend-type')?.value || 'none';
+        data.recurrence_end_type = document.getElementById('ef-recend-type')?.value || 'count';
         data.recurrence_end_count = parseInt(document.getElementById('ef-recend-n')?.value) || null;
         data.recurrence_end_date = document.getElementById('ef-recend-d')?.value || null;
+        if (data.recurrence !== 'None') {
+          if (data.recurrence_end_type === 'count' && !data.recurrence_end_count) {
+            toast('Please enter the number of times this event should repeat.', true); return;
+          }
+          if (data.recurrence_end_type === 'date' && !data.recurrence_end_date) {
+            toast('Please enter the date until which this event should repeat.', true); return;
+          }
+        }
       } else if (hType === 'Treatment') {
         const dateV = document.getElementById('ef-date')?.value;
         const endDateV = document.getElementById('ef-enddate')?.value || dateV;
@@ -1391,9 +1484,19 @@ async function saveEv(type, evId, dateTs) {
 
     // Sync actions to notebook
     if (savedFirst && data.actions?.length) {
-      await syncActionsToNotebook(data.title, data.actions, savedFirst.id);
+      await syncActionsToNotebook(data.title, data.actions, savedFirst.id, data.member_id||null);
     }
 
+    // Sync any new tags to family.tags so they appear in Settings
+    if (data.tags?.length && A.family) {
+      const existingTags = A.family.tags || [];
+      const newTags = data.tags.filter(t => !existingTags.includes(t));
+      if (newTags.length) {
+        const merged = [...new Set([...existingTags, ...newTags])];
+        sb.from('families').update({tags:merged}).eq('id',A.family.id).select().single()
+          .then(({data:fd})=>{ if(fd) A.family=fd; });
+      }
+    }
     closeModal();
     toast(evId ? 'Entry updated! ✅' : `Entry added!${eventsToSave.length>1?' ('+eventsToSave.length+' recurring events created)':''}`);
     renderCal();
@@ -1404,36 +1507,47 @@ window.saveEv = saveEv;
 
 // ── GENERATE RECURRENCES ──────────────────────────────────────────────────────
 function generateRecurrences(data) {
-  const events = [data];
+  const events = [data]; // first event is always included
   const rec = data.recurrence;
   if (!rec || rec === 'None') return events;
 
   const endType = data.recurrence_end_type || 'none';
-  const maxCount = endType === 'count' ? (data.recurrence_end_count || 1) : 52;
-  const endDate = endType === 'date' && data.recurrence_end_date ? new Date(data.recurrence_end_date) : null;
+  // For 'count': total occurrences INCLUDING the first = recurrence_end_count
+  // For 'date': repeat until that date
+  // For 'none': repeat for 1 year (52 weekly max)
+  const totalCount = endType === 'count' ? Math.max(1, data.recurrence_end_count || 1) : 365;
+  const endDateLimit = endType === 'date' && data.recurrence_end_date
+    ? new Date(data.recurrence_end_date + 'T23:59:59')
+    : endType === 'none'
+    ? new Date(new Date(data.date).setFullYear(new Date(data.date).getFullYear() + 1))
+    : null;
 
-  const intervals = { Daily:1, Weekly:7, 'Bi-weekly':14, Monthly:null, Yearly:null };
-  let current = new Date(data.date);
-  let count = 0;
+  const baseDate = new Date(data.date);
+  const baseEnd = data.end_date ? new Date(data.end_date) : null;
+  const duration = baseEnd ? (baseEnd - baseDate) : 0;
 
-  while (count < maxCount - 1) {
+  let generated = 0; // count of additional events (not counting base)
+  let current = new Date(baseDate);
+
+  while (generated < totalCount - 1) { // -1 because base event counts as 1
     let next = new Date(current);
     if (rec === 'Monthly') next.setMonth(next.getMonth() + 1);
     else if (rec === 'Yearly') next.setFullYear(next.getFullYear() + 1);
-    else next.setDate(next.getDate() + intervals[rec]);
+    else if (rec === 'Daily') next.setDate(next.getDate() + 1);
+    else if (rec === 'Weekly') next.setDate(next.getDate() + 7);
+    else if (rec === 'Bi-weekly') next.setDate(next.getDate() + 14);
+    else break; // unknown recurrence
 
-    if (endDate && next > endDate) break;
-    if (count > 100) break; // safety cap
+    if (endDateLimit && next > endDateLimit) break;
+    if (generated > 200) break; // hard safety cap
 
     const recEvent = {...data};
-    const diff = next - current;
-    recEvent.date = new Date(new Date(data.date).getTime() + (next - new Date(data.date))).toISOString();
-    if (data.end_date) {
-      recEvent.end_date = new Date(new Date(data.end_date).getTime() + (next - new Date(data.date))).toISOString();
-    }
+    recEvent.date = next.toISOString();
+    if (baseEnd) recEvent.end_date = new Date(next.getTime() + duration).toISOString();
+    delete recEvent.id; // ensure new ID on insert
     events.push(recEvent);
     current = next;
-    count++;
+    generated++;
   }
   return events;
 }
@@ -1449,7 +1563,7 @@ window.duplicateEv = duplicateEv;
 
 // ── VIEW EVENT (updated) ──────────────────────────────────────────────────────
 function viewEv(id) {
-  const ev = A.events.find(e=>e.id===id);
+  const ev = getEvents().find(e=>e.id===id);
   if (!ev) return;
   const cfg = ET[ev.type];
   const allMembers = ev.participants_all_family;
@@ -1517,11 +1631,15 @@ function viewEv(id) {
     body += '</div>';
   }
 
-  body += `<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
-    <button class="btn btn-primary" style="flex:1" onclick="closeModal();openEvForm('${ev.type}','${ev.id}',null)">✏️ Edit</button>
-    <button class="btn btn-secondary" style="flex:1" onclick="duplicateEv('${ev.id}')">⧉ Duplicate</button>
-    <button class="btn btn-danger" style="flex:1" onclick="delEv('${ev.id}')">🗑 Delete</button>
-  </div>`;
+  if(isSampleMode()){
+    body += `<div style="background:${T.honeyLight};border-radius:9px;padding:10px;text-align:center;font-size:12px;color:${T.honey};font-weight:600;margin-top:8px">📋 Sample mode — read only</div>`;
+  } else {
+    body += `<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+      <button class="btn btn-primary" style="flex:1" onclick="closeModal();openEvForm('${ev.type}','${ev.id}',null)">✏️ Edit</button>
+      <button class="btn btn-secondary" style="flex:1" onclick="duplicateEv('${ev.id}')">⧉ Duplicate</button>
+      <button class="btn btn-danger" style="flex:1" onclick="delEv('${ev.id}')">🗑 Delete</button>
+    </div>`;
+  }
 
   showModal(cfg.label, body);
 }
@@ -1585,7 +1703,9 @@ function renderNB(){
       <div class="page-title">Notebook <button class="btn btn-primary btn-sm" onclick="openNote(null)">+ Note</button></div>
     </div>
     <div style="padding:10px 16px 0">
-      <input class="inp" placeholder="🔍  Search notes…" value="${A.noteSearch}" oninput="A.noteSearch=this.value;renderNB()" style="margin-bottom:10px">
+      <input class="inp" id="nb-search-inp" placeholder="🔍  Search notes…" value="${A.noteSearch}"
+        oninput="A.noteSearch=this.value;clearTimeout(A._nT);A._nT=setTimeout(()=>renderNB(),350)"
+        onkeydown="if(event.key==='Enter'){clearTimeout(A._nT);renderNB();}" style="margin-bottom:10px">
       <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">
         ${[{id:'all',name:'All'},{id:'none',name:'Uncategorized'},...groups].map(g=>`<button onclick="A.noteFGroup='${g.id}';renderNB()" style="padding:4px 12px;border-radius:99px;border:1.5px solid ${A.noteFGroup===g.id?T.sage:T.border};background:${A.noteFGroup===g.id?T.sage:'#fff'};color:${A.noteFGroup===g.id?'#fff':T.muted};font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0">${g.name}</button>`).join('')}
         <button onclick="openAddGroup()" style="padding:4px 12px;border-radius:99px;border:1.5px dashed ${T.border};background:${T.parchment};color:${T.muted};font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0">+ Group</button>
@@ -1600,6 +1720,7 @@ function renderNB(){
 }
 
 function openAddGroup(){
+  if(isSampleMode()){toast('Switch to My Family to add real entries.',true);return;}
   showModal('New Group',`
     <div class="form-row"><label class="lbl">Group name</label><input class="inp" id="ng-name" placeholder="e.g. 🏠 Household" autofocus></div>
     <button class="btn btn-primary btn-full" onclick="saveGroup()">Create Group</button>`);
@@ -1727,8 +1848,18 @@ async function saveNote(noteId){
   if(noteId)res=await sb.from('notes').update(data).eq('id',noteId).select().single();
   else res=await sb.from('notes').insert(data).select().single();
   if(res.error){toast('Error saving note.',true);console.error(res.error);return;}
-  if(noteId)A.notes=A.notes.map(n=>n.id===noteId?res.data:n);
-  else A.notes.push(res.data);
+  const savedNote = res.data;
+  if(noteId)A.notes=A.notes.map(n=>n.id===noteId?savedNote:n);
+  else A.notes.push(savedNote);
+  // If this is a Calendar Actions note, sync checklist back to the matching event
+  const calActGroup=A.noteGroups.find(g=>g.name==='📅 Calendar Actions');
+  if(calActGroup&&savedNote.group_id===calActGroup.id&&savedNote.checklist?.length){
+    const matchEv=A.events.find(e=>e.title===savedNote.title&&e.actions?.length);
+    if(matchEv){
+      await sb.from('events').update({actions:savedNote.checklist}).eq('id',matchEv.id);
+      A.events=A.events.map(e=>e.id===matchEv.id?{...e,actions:savedNote.checklist}:e);
+    }
+  }
   closeModal();toast(noteId?'Note updated!':'Note saved!');renderNB();
 }
 window.saveNote=saveNote;
@@ -1742,6 +1873,36 @@ async function delNote(id){
 window.delNote=delNote;
 
 // ── MEDS ──────────────────────────────────────────────────────────────────────
+function exportMedsXLSX() {
+  // Export as HTML that Excel can open natively - no library needed
+  const dm = getDM(), s = symC();
+  const daysLeft = med => { const td=(med.member_ids||[]).length*(med.dose_per_day||1); if(!td)return null; return Math.floor((med.stock_today||0)/td); };
+  const lastsUntil = med => { const d=daysLeft(med); if(d===null)return '—'; const r=new Date(); r.setDate(r.getDate()+d); return fmt(r); };
+  const totalOrder = dm.reduce((sum,m)=>sum+(parseInt(m.new_order_pkgs)||0)*(m.price_per_pkg||0),0);
+  const grand = (totalOrder+(parseFloat(getFamily()?.transport_cost)||0)).toFixed(2);
+  const memNames = med => getDM() && getMembers().filter(m=>(med.member_ids||[]).includes(m.id)).map(m=>m.name).join(', ');
+  const rows = dm.map(med => [
+    med.name, memNames(med), med.dose_per_day, med.units_per_pkg,
+    `${s}${(med.price_per_pkg||0).toFixed(2)}`, med.stock_today,
+    lastsUntil(med), med.new_order_pkgs||0,
+    med.new_order_pkgs?`${s}${((parseInt(med.new_order_pkgs)||0)*(med.price_per_pkg||0)).toFixed(2)}`:'—',
+    med.last_ordered?fmt(med.last_ordered):'Never'
+  ]);
+  const headers = ['Medication','Members','Dose/day','Units/pkg',`Price/pkg (${s})`,
+    'In stock','Lasts until','New order (pkgs)',`Order cost (${s})`,'Last ordered'];
+  const tableRows = [headers, ...rows, ['GRAND TOTAL','','','','','','','',`${s}${grand}`,'']];
+  const html = `<html><head><meta charset="UTF-8"></head><body>
+    <h2>${getFamily()?.name||''} — Medication Order — ${new Date().toLocaleDateString('en-GB')}</h2>
+    <table border="1" cellpadding="5" cellspacing="0">
+    ${tableRows.map((r,i)=>`<tr>${r.map(c=>`<${i===0?'th':'td'}>${c}</${i===0?'th':'td'}>`).join('')}</tr>`).join('')}
+    </table></body></html>`;
+  const blob = new Blob([html], {type:'application/vnd.ms-excel'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='kinship_meds_order.xls'; a.click();
+  URL.revokeObjectURL(url);
+  toast('Excel file downloaded! ✅');
+}
+
 function exportMedsCSV() {
   const dm = A.dailyMeds, s = symC();
   const daysLeft = med => { const td=(med.member_ids||[]).length*(med.dose_per_day||1); if(!td)return null; return Math.floor((med.stock_today||0)/td); };
@@ -1813,7 +1974,7 @@ function renderMeds(){
       ${dm.length===0?`<div style="color:${T.muted};font-size:13px;margin-bottom:10px;font-style:italic">No daily medications added yet.</div>`:''}
       <div style="overflow-x:auto;border-radius:13px;border:1px solid ${T.border};background:${T.surface}">
         <table class="tbl">
-          <thead><tr>${['Medication','Members','Dose/day','Pkg units','Pkg price','In stock','Lasts until','New order','Order cost','Updated until',''].map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+          <thead><tr>${['Medication','Members','Dose/day','Pkg units','Pkg price','In stock','Lasts until','New order','Order cost','Updated until','Last ordered',''].map(h=>`<th>${h}</th>`).join('')}</tr></thead>
           <tbody>
             ${dm.map((med,idx)=>{
               const dl=daysLeft(med);
@@ -1834,6 +1995,7 @@ function renderMeds(){
                 <td><input type="number" min="0" value="${med.new_order_pkgs||''}" placeholder="0" onfocus="if(this.value==='0')this.value=''" onchange="updateMedOrder('${med.id}',this.value)" style="width:55px;padding:4px 6px;border-radius:7px;border:1px solid ${T.border};font-size:13px;text-align:center"></td>
                 <td style="font-weight:600;color:${T.sage}">${med.new_order_pkgs&&med.new_order_pkgs!=='0'?`${s}${orderPrice(med)}`:'—'}</td>
                 <td style="font-weight:600;color:${T.sage};font-size:12px">${med.new_order_pkgs&&med.new_order_pkgs!=='0'?updUntil(med):'—'}</td>
+                <td style="font-size:11px;color:${T.muted}">${med.last_ordered?fmt(med.last_ordered):'—'}</td>
                 <td>
                   ${med.new_order_pkgs&&med.new_order_pkgs!=='0'?`<button onclick="confirmOrder('${med.id}')" style="background:${T.sageLight};border:1px solid ${T.sageMid};border-radius:7px;padding:3px 8px;font-size:11px;font-weight:700;color:${T.sage};cursor:pointer;white-space:nowrap">✓ Got it</button>`:''}
                   <button onclick="delDM('${med.id}')" style="background:none;border:none;color:${T.muted};cursor:pointer;font-size:14px;margin-left:4px">🗑</button>
@@ -1856,7 +2018,7 @@ function renderMeds(){
       </div>
       <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
         <button class="btn btn-primary btn-sm" onclick="openAddDM()">+ Add medication</button>
-        <button class="btn btn-secondary btn-sm" onclick="exportMedsCSV()">⬇️ Export CSV</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportMedsXLSX()">⬇️ Export Excel</button>
         <button class="btn btn-secondary btn-sm" onclick="copyOrderToClipboard()">📋 Copy order</button>
       </div>
     </div>
@@ -1914,7 +2076,11 @@ window.updateMedOrder=updateMedOrder;
 async function confirmOrder(id){
   const med=A.dailyMeds.find(m=>m.id===id);if(!med)return;
   const ns=(med.stock_today||0)+((parseInt(med.new_order_pkgs)||0)*(med.units_per_pkg||0));
-  const{data}=await sb.from('daily_meds').update({stock_today:ns,new_order_pkgs:0}).eq('id',id).select().single();
+  const{data}=await sb.from('daily_meds').update({
+    stock_today:ns,
+    new_order_pkgs:0,
+    last_ordered:new Date().toISOString()
+  }).eq('id',id).select().single();
   if(data){A.dailyMeds=A.dailyMeds.map(m=>m.id===id?data:m);toast('Stock updated! ✅');renderMeds();}
 }
 window.confirmOrder=confirmOrder;
@@ -1931,6 +2097,7 @@ async function delOM(id){if(!confirm('Remove?'))return;await sb.from('occasional
 window.delOM=delOM;
 
 function openAddDM(){
+  if(isSampleMode()){toast('Switch to My Family to add real entries.',true);return;}
   showModal('Add Daily Medication',`
     <div class="form-row"><label class="lbl">Medication name</label><input class="inp" id="dm-n" placeholder="e.g. Vitamin D 1000IU" autofocus></div>
     <div class="form-row"><label class="lbl">Members</label>
@@ -1944,9 +2111,6 @@ function openAddDM(){
       <div class="form-row" style="margin:0"><label class="lbl">Stock today</label><input class="inp" type="number" id="dm-s" placeholder="0" onfocus="this.select()"></div>
     </div>
     <div class="form-row"><label class="lbl">Note</label><input class="inp" id="dm-note" placeholder="e.g. Take with food"></div>
-    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-bottom:16px;cursor:pointer">
-      <input type="checkbox" id="dm-sh"> Shared pack (multiple members use same pack)
-    </label>
     <button class="btn btn-primary btn-full" onclick="saveDM()">Add Medication</button>`);
 }
 window.openAddDM=openAddDM;
@@ -1962,7 +2126,7 @@ async function saveDM(){
     units_per_pkg:parseInt(document.getElementById('dm-u')?.value)||30,
     price_per_pkg:parseFloat(document.getElementById('dm-p')?.value)||0,
     stock_today:parseInt(document.getElementById('dm-s')?.value)||0,
-    shared:document.getElementById('dm-sh')?.checked||false,
+    shared:memberIds.length>1,
     note:document.getElementById('dm-note')?.value||'',
   };
   const{data:result,error}=await sb.from('daily_meds').insert(data).select().single();
@@ -1972,6 +2136,7 @@ async function saveDM(){
 window.saveDM=saveDM;
 
 function openAddOM(){
+  if(isSampleMode()){toast('Switch to My Family to add real entries.',true);return;}
   showModal('Add Occasional Medication',`
     <div class="form-row"><label class="lbl">Medication name</label><input class="inp" id="om-n" placeholder="e.g. Ibuprofen 400mg" autofocus></div>
     <div class="grid2">
@@ -2135,7 +2300,8 @@ function renderSettings(){
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
             ${m.is_owner?`<span class="chip" style="background:${T.sageLight};color:${T.sage}">Owner</span>`:''}
-            ${m.email&&!m.user_id?`<button onclick="sendInvite('${m.email}','${m.id}')" class="btn btn-primary btn-sm">📧 Invite</button>`:''}
+            <button onclick="openEditMem('${m.id}')" style="background:${T.parchment};border:1px solid ${T.border};border-radius:7px;padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer;color:${T.muted}">✏️ Edit</button>
+            ${m.email?`<button onclick="sendInvite('${m.email}','${m.id}')" class="btn btn-primary btn-sm" style="font-size:11px;padding:3px 9px">🔗 Invite</button>`:''}
           </div>
         </div>`).join('')}
       </div>`;
@@ -2214,6 +2380,59 @@ async function updateNotif(key,val){
 }
 window.updateNotif=updateNotif;
 
+function openEditMem(id){
+  const m=A.members.find(x=>x.id===id);if(!m)return;
+  showModal('Edit Member',`
+    <div class="grid2">
+      <div class="form-row" style="margin:0"><label class="lbl">Name *</label><input class="inp" id="em-n" value="${m.name}" autofocus></div>
+      <div class="form-row" style="margin:0"><label class="lbl">Role</label><input class="inp" id="em-r" value="${m.role||''}"></div>
+      <div class="form-row" style="margin:0"><label class="lbl">Age</label><input class="inp" type="number" id="em-a" value="${m.age||''}" onfocus="this.select()"></div>
+      <div class="form-row" style="margin:0"><label class="lbl">Gender</label>
+        <select class="sel" id="em-g"><option value="">Select</option>${['Male','Female','Non-binary','Prefer not to say'].map(g=>`<option${m.gender===g?' selected':''}>${g}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="form-row"><label class="lbl">Email</label><input class="inp" type="email" id="em-e" value="${m.email||''}" placeholder="their@email.com"></div>
+    <div style="display:flex;gap:6px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+      <span class="lbl" style="margin:0">Colour:</span>
+      ${MCOLORS.map((c,i)=>`<div onclick="document.querySelectorAll('.ecs').forEach(s=>s.style.outline='none');this.style.outline='3px solid ${T.ink}';document.getElementById('em-c').value='${c}'" class="ecs" style="width:26px;height:26px;border-radius:50%;background:${c};cursor:pointer;outline:${m.color===c?'3px solid '+T.ink:'none'};outline-offset:2px"></div>`).join('')}
+      <input type="hidden" id="em-c" value="${m.color||MCOLORS[0]}">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveEditMem('${id}')">Save Changes</button>
+      ${!m.is_owner?`<button class="btn btn-danger" onclick="delMem('${id}')">Remove</button>`:''}
+    </div>`);
+}
+window.openEditMem=openEditMem;
+
+async function saveEditMem(id){
+  if(!A.family)return;
+  const name=document.getElementById('em-n')?.value?.trim();
+  if(!name){toast('Name is required.',true);return;}
+  const data={
+    name,
+    role:document.getElementById('em-r')?.value||'',
+    age:parseInt(document.getElementById('em-a')?.value)||null,
+    gender:document.getElementById('em-g')?.value||null,
+    email:document.getElementById('em-e')?.value?.trim()||null,
+    color:document.getElementById('em-c')?.value||MCOLORS[0],
+    avatar:name[0].toUpperCase(),
+  };
+  const{data:result,error}=await sb.from('family_members').update(data).eq('id',id).select().single();
+  if(error){toast('Error saving: '+error.message,true);console.error(error);return;}
+  A.members=A.members.map(m=>m.id===id?result:m);
+  closeModal();toast('Member updated! ✅');renderSettings();
+}
+window.saveEditMem=saveEditMem;
+
+async function delMem(id){
+  if(!confirm('Remove this family member?'))return;
+  const{error}=await sb.from('family_members').delete().eq('id',id);
+  if(error){toast('Error removing: '+error.message,true);return;}
+  A.members=A.members.filter(m=>m.id!==id);
+  closeModal();toast('Member removed.');renderSettings();
+}
+window.delMem=delMem;
+
 function openAddMem(){
   showModal('Add Family Member',`
     <div class="grid2">
@@ -2251,9 +2470,20 @@ async function saveMem(){
   const{data:result,error}=await sb.from('family_members').insert(data).select().single();
   if(error){toast('Error adding member.',true);console.error(error);return;}
   A.members.push(result);
-  closeModal();toast(`${name} added! ✅`);
-  if(email&&confirm(`Send an invite to ${email} to join ${A.family.name}?`))sendInvite(email,result.id);
-  else renderSettings();
+  closeModal();toast(`${name} added! ✅`);renderSettings();
+  // If email provided, show invite option in a non-blocking way
+  if(email){
+    setTimeout(()=>{
+      showModal('Member Added ✅',`<div style="text-align:center;padding:10px 0">
+        <div style="font-size:40px;margin-bottom:10px">👤</div>
+        <div style="font-weight:700;margin-bottom:8px">${name} has been added!</div>
+        <div style="font-size:13px;color:${T.muted};margin-bottom:16px">Would you like to generate an invite link to share with them?</div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">Not now</button>
+          <button class="btn btn-primary" style="flex:1" onclick="closeModal();sendInvite('${email}','${result.id}')">🔗 Generate invite</button>
+        </div></div>`);
+    },300);
+  }
 }
 window.saveMem=saveMem;
 
