@@ -521,11 +521,11 @@ function renderCal(){
         return`<div onclick="calClick(${d})" style="min-height:80px;padding:3px 2px 4px;border-radius:9px;background:${dayBg};border:1px solid ${isT?T.sageMid:T.border};cursor:pointer;overflow:hidden">
           <div style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${isT?T.sage:'transparent'};color:${isT?'#fff':T.ink};font-size:11px;font-weight:${isT?800:600};margin:0 auto 3px">${d}</div>
           <div style="display:flex;flex-direction:column;gap:2px">
-            ${spanCont.slice(0,1).map(e=>{
+            ${spanCont.slice(0,2).map(e=>{
               const pc=pillC(e);
               const isLast=isLastDay(e);
-              // Continuation bar: full width, solid colour, text only on last day
-              return`<div onclick="event.stopPropagation();viewEv('${e.id}')" style="background:${pc};margin:0 -2px;padding:2px 3px;font-size:9px;font-weight:700;color:#fff;line-height:1.4;white-space:nowrap;overflow:hidden;border-radius:${isLast?'0 4px 4px 0':'0'};opacity:.82;cursor:pointer">${isLast?shortT(e):''}</div>`;
+              // Full-width continuation bar — always visible, clickable
+              return`<div onclick="event.stopPropagation();viewEv('${e.id}')" style="background:${pc};margin:0 -3px;padding:2px 4px;font-size:9px;font-weight:700;color:#fff;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:${isLast?'0 5px 5px 0':'0'};min-height:16px;cursor:pointer;display:block">${isLast?'◄ '+shortT(e):'…'}</div>`;
             }).join('')}
             ${dayEvents.slice(0,3-spanCont.length).map(e=>{
               const pc=pillC(e);
@@ -668,8 +668,18 @@ window.renderCalResults=renderCalResults;
 function calClick(d){
   const vY=A.calDate.getFullYear(),vM=A.calDate.getMonth();
   const dt=new Date(vY,vM,d);
-  const de=getEvents().filter(e=>isSameDay(e.date,dt));
-  if(de.length)showDayModal(dt,de);
+  const allEv=getEvents();
+  // Events that START on this day
+  const startingHere=allEv.filter(e=>isSameDay(e.date,dt));
+  // Multi-day events that SPAN through this day (started earlier)
+  const spanning=allEv.filter(e=>{
+    if(!e.end_date||isSameDay(e.date,dt))return false;
+    const eS=new Date(e.date);eS.setHours(0,0,0,0);
+    const eE=new Date(e.end_date);eE.setHours(23,59,59,0);
+    return dt>eS&&dt<=eE;
+  });
+  const allOnDay=[...startingHere,...spanning];
+  if(allOnDay.length)showDayModal(dt,allOnDay);
   else showPicker(dt);
 }
 window.calClick=calClick;
@@ -685,7 +695,10 @@ function showDayModal(dt,de){
   showModal(`${DNF[(dt.getDay()+6)%7]}, ${fmt(dt)}`,
     `${de.map(e=>{
       const mc=memColor(e);
-      const timeStr=e.all_day?'All day':fmtTime(e.date);
+      const isSpanning=e.end_date&&!isSameDay(e.date,e.end_date);
+      const timeStr=e.all_day||isSpanning
+        ?`${fmt(e.date)}${e.end_date?' → '+fmt(e.end_date):''}`
+        :fmtTime(e.date);
       return`<div style="display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:11px;background:#fff;border:1.5px solid ${mc}33;border-left:4px solid ${mc};margin-bottom:8px">
         <div onclick="closeModal();setTimeout(()=>viewEv('${e.id}'),50)" style="flex:1;cursor:pointer;display:flex;align-items:center;gap:8px">
           <span style="font-size:16px">${ET[e.type].icon}</span>
@@ -856,10 +869,13 @@ async function syncActionsToNotebook(eventTitle, actions, eventId, memberId) {
   }
   if (!group) return;
   let note = A.notes.find(n => n.group_id === group.id && n.title === eventTitle);
+  // Find the saved event to get its ID for linking
+  const linkedEvent = A.events.find(e=>e.title===eventTitle&&e.actions?.length);
+  const eventRef = linkedEvent ? `📅 From calendar event: ${eventTitle} (${fmt(linkedEvent.date)})` : `📅 From calendar event: ${eventTitle}`;
   const noteData = {
     family_id: A.family.id,
     title: eventTitle,
-    content: `Actions from calendar event: ${eventTitle}`,
+    content: eventRef,
     color: '#f5e4c4',
     group_id: group.id,
     member_id: memberId || null,
@@ -1321,6 +1337,11 @@ window.localDT = localDT;
 
 async function saveEv(type, evId, dateTs) {
   if (!A.family) { toast('Set up your family first.', true); return; }
+  // Ensure session is still valid before saving
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { toast('Session expired — please sign in again.', true); showAuth(); return; }
+  } catch(se) { console.warn('Session check failed', se); }
   let data = { family_id: A.family.id, type };
   try {
     if (type === 'wellness') {
@@ -1587,8 +1608,18 @@ function viewEv(id) {
         ${ev.social_type?`<span class="chip" style="background:${cfg.bg};color:${cfg.color};margin-left:4px">${ev.social_type}</span>`:''}
       </div>
     </div>
+`;
+  // Date/time display helper — must be outside template literal
+  const evFmtTime=d=>{if(!d)return'';const x=new Date(d);return x.getHours().toString().padStart(2,'0')+':'+x.getMinutes().toString().padStart(2,'0');};
+  const isMultiDay=ev.end_date&&!isSameDay(ev.date,ev.end_date);
+  const dateStr=ev.all_day
+    ?(isMultiDay?fmt(ev.date)+' → '+fmt(ev.end_date):fmt(ev.date)+' · All day')
+    :(isMultiDay
+      ?fmt(ev.date)+' '+evFmtTime(ev.date)+' → '+fmt(ev.end_date)+' '+evFmtTime(ev.end_date)
+      :fmt(ev.date)+' · '+evFmtTime(ev.date)+(ev.end_date?' → '+evFmtTime(ev.end_date):''));
+  body += `
     <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:13px;color:${T.muted};margin-bottom:12px">
-      <span>📅 ${fmt(ev.date)}${ev.all_day?' (All day)':ev.end_date&&!isSameDay(ev.date,ev.end_date)?` → ${fmt(ev.end_date)}`:''}</span>
+      <span>📅 ${dateStr}</span>
       ${ev.location?`<span>📍 ${ev.location}</span>`:''}
       ${ev.recurrence&&ev.recurrence!=='None'?`<span>🔁 ${ev.recurrence}${ev.recurrence_end_type==='count'?` · ${ev.recurrence_end_count}x`:ev.recurrence_end_type==='date'?` until ${fmt(ev.recurrence_end_date)}`:''}</span>`:''}
     </div>`;
