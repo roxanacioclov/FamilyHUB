@@ -2,8 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🌿 Kinship — Family Hub</title>
+<title>🌿 Kinship — Family Hub v2.1</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 <style>
@@ -97,6 +100,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--sage);outline-of
   <div class="auth-card">
     <div style="font-family:'Playfair Display',serif;font-size:26px;color:var(--sage);text-align:center;margin-bottom:4px">🌿 Kinship</div>
     <div style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:26px">Your family's all-in-one hub</div>
+    <div style="text-align:center;color:var(--muted);font-size:10px;margin-bottom:10px;opacity:0.5">v2.1 — Apr 13</div>
     <div id="auth-login">
       <div class="form-row"><label class="lbl">Email</label><input class="inp" type="email" id="a-email" placeholder="your@email.com" autocomplete="email"></div>
       <div class="form-row"><label class="lbl">Password</label><input class="inp" type="password" id="a-pass" placeholder="••••••••" autocomplete="current-password"></div>
@@ -2824,7 +2828,21 @@ async function handleSession(session){
     }
   }catch(e){
     console.error('Session error',e);
-    showAuth();
+    // Show the error visibly instead of silently falling to auth screen
+    const ls = document.getElementById('loading-screen');
+    if(ls) {
+      ls.style.display='flex';
+      ls.innerHTML=`<div style="text-align:center;padding:40px;font-family:sans-serif;max-width:380px">
+        <div style="font-size:32px;margin-bottom:12px">⚠️</div>
+        <div style="font-size:15px;font-weight:700;margin-bottom:8px">Something went wrong</div>
+        <div style="font-size:12px;color:#7a7060;margin-bottom:4px;background:#f5f2ed;padding:8px;border-radius:8px;word-break:break-all">${e.message}</div>
+        <div style="font-size:11px;color:#9e9488;margin-bottom:16px">Open browser console (F12) for details</div>
+        <button onclick="location.reload()" style="padding:10px 24px;background:#5e8b62;color:#fff;border:none;border-radius:10px;font-size:14px;cursor:pointer;margin-right:8px">Reload</button>
+        <button onclick="showAuth()" style="padding:10px 24px;background:#ede8df;color:#7a7060;border:none;border-radius:10px;font-size:14px;cursor:pointer">Sign in again</button>
+      </div>`;
+    } else {
+      showAuth();
+    }
   }
 }
 
