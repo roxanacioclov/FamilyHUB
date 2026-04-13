@@ -1907,8 +1907,7 @@ function openNote(noteId){
       <button class="btn btn-primary" style="flex:1" onclick="saveNote('${noteId||''}')">Save</button>
       ${noteId?`<button class="btn btn-danger" onclick="delNote('${noteId}')">🗑</button>`:''}
     </div>`);
-  // Populate checklist with drag-enabled rows
-  const clItems = "const cl=note?.checklist||[];\n  showModal(noteId?'";
+  // Populate checklist with drag-enabled rows after modal renders
   // Actually: populate from cl variable captured in closure — use setTimeout
   setTimeout(()=>{
     const clCont=document.getElementById('ne-cl');
