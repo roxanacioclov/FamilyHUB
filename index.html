@@ -524,10 +524,9 @@ function renderCal(){
             ${spanCont.slice(0,2).map(e=>{
               const pc=pillC(e);
               const isLast=isLastDay(e);
-              // Full-width continuation bar — always visible, clickable
               return`<div onclick="event.stopPropagation();calClick(${d})" style="background:${pc};margin:0 -3px 0 -3px;padding:1px 3px;font-size:9px;font-weight:700;color:#fff;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:${isLast?'0 3px 3px 0':'0'};cursor:pointer;display:block">${isLast?shortT(e):' '}</div>`;
             }).join('')}
-            ${dayEvents.slice(0,3-spanCont.length).map(e=>{
+            ${dayEvents.filter(e=>!multiDayStart.find(m=>m.id===e.id)).slice(0,Math.max(0,3-spanCont.length)).map(e=>{
               const pc=pillC(e);
               const ms=isMultiStart(e);
               // Multi-day start: pill extends right (no right border-radius)
@@ -603,9 +602,14 @@ function renderCal(){
       </select>
     </div>
     <div style="padding:6px 16px 0">
-      <input class="inp" id="cal-search-inp" placeholder="🔍  Search entries…" value="${A.calSearch}" 
-        oninput="A.calSearch=this.value;clearTimeout(A._sT);A._sT=setTimeout(()=>renderCalResults(),400)"
-        onkeydown="if(event.key==='Enter'){clearTimeout(A._sT);renderCalResults();}">
+      <div style="position:relative">
+        <input class="inp" id="cal-search-inp" placeholder="🔍  Search entries…" value="${A.calSearch}"
+          style="padding-right:${A.calSearch?'36px':'12px'}"
+          oninput="A.calSearch=this.value;clearTimeout(A._sT);A._sT=setTimeout(()=>renderCalResults(),350);document.getElementById('cal-search-x').style.display=this.value?'flex':'none'"
+          onkeydown="if(event.key==='Enter'){clearTimeout(A._sT);renderCalResults();this.blur();}">
+        <button id="cal-search-x" onclick="A.calSearch='';document.getElementById('cal-search-inp').value='';renderCalResults();this.style.display='none'"
+          style="display:${A.calSearch?'flex':'none'};position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:${T.muted};font-size:16px;cursor:pointer;width:24px;height:24px;align-items:center;justify-content:center;border-radius:50%">×</button>
+      </div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 0">
       <button onclick="A.calDate=new Date(${vY},${vM-1},1);renderCal()" style="background:${T.parchment};border:1px solid ${T.border};border-radius:9px;width:33px;height:33px;font-size:18px;cursor:pointer">‹</button>
@@ -631,7 +635,7 @@ function renderCalResults(){
     if(e.participants_all_family||(!e.member_id&&!(e.participants?.length)))return '#9e9488';
     const mid=e.member_id||(e.participants?.[0]);
     const m=getMembers().find(m=>m.id===mid);
-    return m?m.color:'#5a5248';
+    return m?m.color:'#9e9488';
   };
   // Find or create results container
   let res = document.getElementById('cal-search-results');
@@ -689,15 +693,15 @@ function showDayModal(dt,de){
     if(e.participants_all_family||(!e.member_id&&!(e.participants?.length)))return '#9e9488';
     const mid=e.member_id||(e.participants?.[0]);
     const m=getMembers().find(m=>m.id===mid);
-    return m?m.color:'#5a5248';
+    return m?m.color:'#9e9488';
   };
   const fmtTime=d=>{if(!d)return'';const x=new Date(d);return x.getHours().toString().padStart(2,'0')+':'+x.getMinutes().toString().padStart(2,'0');};
   showModal(`${DNF[(dt.getDay()+6)%7]}, ${fmt(dt)}`,
     `${de.map(e=>{
       const mc=memColor(e);
       const isSpanning=e.end_date&&!isSameDay(e.date,e.end_date);
-      const timeStr=e.all_day||isSpanning
-        ?`${fmt(e.date)}${e.end_date?' → '+fmt(e.end_date):''}`
+      const timeStr=(e.all_day||e.type==='wellness'||isSpanning)
+        ?(isSpanning?`${fmt(e.date)} → ${fmt(e.end_date)}`:'All day')
         :fmtTime(e.date);
       return`<div style="display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:11px;background:#fff;border:1.5px solid ${mc}33;border-left:4px solid ${mc};margin-bottom:8px">
         <div onclick="closeModal();setTimeout(()=>viewEv('${e.id}'),50)" style="flex:1;cursor:pointer;display:flex;align-items:center;gap:8px">
@@ -810,10 +814,54 @@ function addChecklistRow(containerId, text='', done=false, idx=null) {
   if (!cont) return;
   const i = idx !== null ? idx : cont.children.length;
   const div = document.createElement('div');
-  div.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:6px';
-  div.innerHTML = `<input type="checkbox" id="cl-${containerId}-${i}" ${done?'checked':''}><input class="inp" id="ct-${containerId}-${i}" value="${text}" style="flex:1;font-size:13px;padding:6px 10px" placeholder="Action item…"><button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;color:${T.muted};font-size:16px;cursor:pointer;padding:4px;flex-shrink:0">×</button>`;
-  div.querySelector('input[type="text"],input:not([type="checkbox"])').addEventListener('keydown', e => {
+  div.draggable = true;
+  div.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:default';
+  div.dataset.container = containerId;
+  div.innerHTML = `<span class="drag-handle" style="cursor:grab;color:#c8bfb0;font-size:14px;flex-shrink:0;user-select:none;touch-action:none">⠿</span><input type="checkbox" id="cl-${containerId}-${i}" ${done?'checked':''}><input class="inp" id="ct-${containerId}-${i}" value="${text}" style="flex:1;font-size:13px;padding:6px 10px" placeholder="Action item…"><button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;color:${T.muted};font-size:16px;cursor:pointer;padding:4px;flex-shrink:0">×</button>`;
+  // Enter key → new row
+  div.querySelector('input:not([type="checkbox"])').addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); addChecklistRow(containerId); setTimeout(()=>{const rows=document.getElementById(containerId).querySelectorAll('input:not([type="checkbox"])');rows[rows.length-1]?.focus();},50); }
+  });
+  // Drag-to-reorder (mouse)
+  div.addEventListener('dragstart', e => {
+    e.dataTransfer.effectAllowed = 'move';
+    div.style.opacity = '0.4';
+    cont._dragging = div;
+  });
+  div.addEventListener('dragend', () => { div.style.opacity = '1'; cont._dragging = null; });
+  div.addEventListener('dragover', e => {
+    e.preventDefault();
+    const dragging = cont._dragging;
+    if (!dragging || dragging === div) return;
+    const rect = div.getBoundingClientRect();
+    const mid = rect.top + rect.height / 2;
+    if (e.clientY < mid) cont.insertBefore(dragging, div);
+    else cont.insertBefore(dragging, div.nextSibling);
+  });
+  // Touch drag support
+  let touchY = 0, touchClone = null;
+  div.querySelector('.drag-handle').addEventListener('touchstart', e => {
+    touchY = e.touches[0].clientY;
+    div.style.opacity = '0.5';
+    cont._dragging = div;
+  }, {passive:true});
+  div.querySelector('.drag-handle').addEventListener('touchmove', e => {
+    e.preventDefault();
+    const y = e.touches[0].clientY;
+    const els = Array.from(cont.children);
+    els.forEach(el => {
+      if (el === cont._dragging) return;
+      const rect = el.getBoundingClientRect();
+      if (y > rect.top && y < rect.bottom) {
+        const mid = rect.top + rect.height / 2;
+        if (y < mid) cont.insertBefore(cont._dragging, el);
+        else cont.insertBefore(cont._dragging, el.nextSibling);
+      }
+    });
+  }, {passive:false});
+  div.querySelector('.drag-handle').addEventListener('touchend', () => {
+    div.style.opacity = '1';
+    cont._dragging = null;
   });
   cont.appendChild(div);
   return div;
@@ -978,7 +1026,7 @@ function openEvForm(type, evId, dateTs, duplicateId) {
         <select class="sel" id="ef-recend-type" onchange="updateRecurrenceEndType(this.value)">
           <option value="count"${eType==='count'?' selected':''}>After number of times</option>
           <option value="date"${eType==='date'?' selected':''}>Until a specific date</option>
-          <option value="none"${eType==='none'?' selected':''}>Repeat for 1 year</option>
+          <option value="none"${eType==='none'?' selected':''}>Repeat forever</option>
         </select></div>
       <div id="ef-recend-count" style="display:${eType!=='date'&&eType!=='none'?'block':'none'}" class="form-row">
         <label class="lbl">Number of occurrences <span style="color:#b85070">*</span></label>
@@ -1261,13 +1309,33 @@ window.updateRecurrenceEndType = updateRecurrenceEndType;
 function prefillWellness(memberId) {
   const last = getLastWellness(memberId);
   if (!last) return;
-  const setVal = (id, val) => { const el=document.getElementById(id); if(el&&val!==undefined&&val!==null&&val!=='') el.value=val; };
+  // Mark prefilled fields with a subtle tint so user knows these are from last log
+  const setVal = (id, val) => {
+    const el=document.getElementById(id);
+    if(!el||val===undefined||val===null||val==='') return;
+    el.value=val;
+    // Sage tint background = "this came from your last log"
+    el.style.background='#eef6ef';
+    el.style.borderColor='#8ab88e';
+    el.addEventListener('input',()=>{el.style.background='';el.style.borderColor='';},{once:true});
+  };
   setVal('ef-wt', last.weight);
   setVal('ef-ht', last.height);
   setVal('ef-hyd', last.hydration||'');
   setVal('ef-en', last.energy);
   setVal('ef-sl', last.sleep);
-  if (last.mood) { const mSel=document.getElementById('ef-mood'); if(mSel) mSel.value=last.mood; }
+  if (last.mood) { const mSel=document.getElementById('ef-mood'); if(mSel) { mSel.value=last.mood; mSel.style.background='#eef6ef'; mSel.style.borderColor='#8ab88e'; mSel.addEventListener('change',()=>{mSel.style.background='';mSel.style.borderColor='';},{once:true}); } }
+  // Add a small label near the form to explain the tint
+  setTimeout(()=>{
+    const memRow=document.getElementById('ef-mem')?.closest('.form-row');
+    if(memRow&&!document.getElementById('prefill-note')){
+      const note=document.createElement('div');
+      note.id='prefill-note';
+      note.style.cssText='font-size:11px;color:#5e8b62;font-weight:600;margin:-6px 0 10px;display:flex;align-items:center;gap:4px';
+      note.innerHTML='<span style="display:inline-block;width:10px;height:10px;background:#eef6ef;border:1px solid #8ab88e;border-radius:3px"></span> Green fields are pre-filled from your last log — edit as needed';
+      memRow.after(note);
+    }
+  },100);
 }
 window.prefillWellness = prefillWellness;
 
@@ -1364,7 +1432,9 @@ async function saveEv(type, evId, dateTs) {
     if (type === 'wellness') {
       data.member_id = document.getElementById('ef-mem')?.value || null;
       const rawDate = document.getElementById('ef-date')?.value;
-      data.date = rawDate ? rawDate + 'T12:00:00' : new Date().toISOString();
+      data.date = rawDate ? rawDate + 'T00:00:00' : new Date().toISOString();
+      data.all_day = true;
+      data.end_date = null;
       const mem = getMem(data.member_id);
       const wKg = parseFloat(document.getElementById('ef-wt')?.value);
       const wMood = document.getElementById('ef-mood')?.value||'';
@@ -1498,7 +1568,7 @@ async function saveEv(type, evId, dateTs) {
     const cleanData = obj => {
       const allowed = ['family_id','type','title','date','end_date','all_day','location',
         'description','recurrence','recurrence_end_type','recurrence_end_count','recurrence_end_date',
-        'appt_type','member_id','participants','participants_all_family','tags','tasks','subtasks',
+        'appt_type','member_id','participants','participants_all_family','tags',
         'weight','height','hydration','exercised','activity','activity_mins','mood','energy','sleep',
         'social_type','actions','doctor','specialty','cost','cost_currency',
         'symptoms','cure','recommended_by','administration','considerations','links'];
@@ -1524,10 +1594,16 @@ async function saveEv(type, evId, dateTs) {
       const res = await sb.from('events').insert(cleanedRecurrences).select();
       if (res.error) {
         console.error('Insert error', res.error);
-        toast('Error saving: ' + (res.error.message||'unknown'), true);
+        toast('Error: ' + (res.error.message||'unknown error'), true);
         return;
       }
-      if (res.data) { A.events.push(...res.data); savedFirst = res.data[0]; }
+      if (!res.data || res.data.length === 0) {
+        // RLS silently blocked the insert — no error but no data returned
+        console.error('Insert blocked silently — RLS or missing columns. Payload:', cleanedRecurrences[0]);
+        toast('Save failed — please check you are signed in and try again.', true);
+        return;
+      }
+      A.events.push(...res.data); savedFirst = res.data[0];
     }
 
     // Sync actions to notebook
@@ -1546,7 +1622,7 @@ async function saveEv(type, evId, dateTs) {
       }
     }
     closeModal();
-    toast(evId ? 'Entry updated! ✅' : `Entry added!${eventsToSave.length>1?' ('+eventsToSave.length+' recurring events created)':''}`);
+    toast(evId ? 'Entry updated! ✅' : `Entry added!${eventsToSave.length>1?' ('+eventsToSave.length+' occurrences created)':''}`);
     renderCal();
 
   } catch(e) { console.error('saveEv error', e); toast('Unexpected error: ' + e.message, true); }
@@ -1567,7 +1643,7 @@ function generateRecurrences(data) {
   const endDateLimit = endType === 'date' && data.recurrence_end_date
     ? new Date(data.recurrence_end_date + 'T23:59:59')
     : endType === 'none'
-    ? new Date(new Date(data.date).setFullYear(new Date(data.date).getFullYear() + 1))
+    ? new Date('2099-12-31') // repeat forever — capped at 2099 for DB safety
     : null;
 
   const baseDate = new Date(data.date);
@@ -1710,7 +1786,8 @@ function delEv(id) {
     <div style="text-align:center;padding:10px 0">
       <div style="font-size:40px;margin-bottom:12px">🗑</div>
       <div style="font-weight:700;font-size:16px;margin-bottom:8px">Delete this entry?</div>
-      <div style="font-size:13px;color:${T.muted};margin-bottom:20px">"${ev.title||ET[ev.type].label}" will be permanently removed.</div>
+      <div style="font-size:13px;color:${T.muted};margin-bottom:6px">"${ev.title||ET[ev.type].label}"</div>
+      <div style="font-size:12px;color:${T.muted};margin-bottom:20px">📅 ${fmt(ev.date)}${ev.all_day||ev.type==='wellness'?'':' · '+(()=>{const x=new Date(ev.date);return x.getHours().toString().padStart(2,'0')+':'+x.getMinutes().toString().padStart(2,'0');})()} will be permanently removed.</div>
       <div style="display:flex;gap:10px">
         <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">Cancel</button>
         <button class="btn btn-danger" style="flex:1" onclick="confirmDelEv('${id}')">Delete</button>
@@ -1723,7 +1800,10 @@ async function confirmDelEv(id) {
   const {error} = await sb.from('events').delete().eq('id', id);
   if (error) { toast('Error deleting.', true); return; }
   A.events = A.events.filter(e=>e.id!==id);
-  closeModal(); toast('Entry deleted.'); renderCal();
+  closeModal(); toast('Entry deleted.');
+  renderCal();
+  // Re-render search results if search is active
+  if(A.calSearch || A.calFType!=='all' || A.calFMember!=='all') setTimeout(renderCalResults, 50);
 }
 window.confirmDelEv = confirmDelEv;
 
@@ -1804,13 +1884,7 @@ function openNote(noteId){
   showModal(noteId?'Edit Note':'New Note',`
     <input id="ne-t" class="inp" value="${note?.title||''}" placeholder="Title…" style="font-size:16px;font-weight:700;margin-bottom:8px" autofocus>
     <textarea id="ne-c" class="inp" rows="3" placeholder="Write your note…" style="resize:none;margin-bottom:10px">${note?.content||''}</textarea>
-    <div id="ne-cl" style="margin-bottom:6px">
-      ${cl.map((item,i)=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <input type="checkbox" id="nc-${i}" ${item.done?'checked':''}>
-        <input class="inp" id="nt-${i}" value="${item.text}" style="flex:1;font-size:13px;padding:6px 10px" placeholder="Item…">
-        <button onclick="this.parentElement.remove()" style="background:none;border:none;color:${T.muted};font-size:16px;cursor:pointer;padding:4px">×</button>
-      </div>`).join('')}
-    </div>
+    <div id="ne-cl" style="margin-bottom:6px"></div>
     <button onclick="addCLItem()" style="font-size:12px;color:${T.sage};background:none;border:1px dashed ${T.sageMid};border-radius:8px;padding:4px 10px;cursor:pointer;font-weight:600;margin-bottom:14px">+ Checklist item</button>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
       ${NOTE_COLORS.map(c=>`<div onclick="document.querySelectorAll('.ncs').forEach(s=>s.style.outline='none');this.style.outline='3px solid ${T.sage}';document.getElementById('ne-col').value='${c}'" class="ncs" style="width:22px;height:22px;border-radius:50%;background:${c};cursor:pointer;outline:${(note?.color||NOTE_COLORS[0])===c?'3px solid '+T.sage:'none'};outline-offset:2px"></div>`).join('')}
@@ -1833,6 +1907,17 @@ function openNote(noteId){
       <button class="btn btn-primary" style="flex:1" onclick="saveNote('${noteId||''}')">Save</button>
       ${noteId?`<button class="btn btn-danger" onclick="delNote('${noteId}')">🗑</button>`:''}
     </div>`);
+  // Populate checklist with drag-enabled rows
+  const clItems = "const cl=note?.checklist||[];\n  showModal(noteId?'";
+  // Actually: populate from cl variable captured in closure — use setTimeout
+  setTimeout(()=>{
+    const clCont=document.getElementById('ne-cl');
+    if(clCont&&!clCont.children.length){
+      const noteObj=A.notes.find(n=>n.id===noteId);
+      const items=noteId?(noteObj?.checklist||[]):[];
+      items.forEach(item=>addCLItem(item.text,item.done));
+    }
+  },50);
   // Handle "New Group" selection - use in-app modal instead of browser prompt
   document.getElementById('ne-grp').addEventListener('change',function(){
     if(this.value==='__new__'){
@@ -1870,16 +1955,27 @@ function openNote(noteId){
 }
 window.openNote=openNote;
 
-function addCLItem(){
+function addCLItem(text='', done=false){
   const cont=document.getElementById('ne-cl');
+  if(!cont)return;
   const i=cont.children.length;
   const div=document.createElement('div');
+  div.draggable=true;
   div.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:6px';
-  div.innerHTML=`<input type="checkbox" id="nc-${i}"><input class="inp" id="nt-${i}" style="flex:1;font-size:13px;padding:6px 10px" placeholder="Item…"><button onclick="this.parentElement.remove()" style="background:none;border:none;color:${T.muted};font-size:16px;cursor:pointer;padding:4px">×</button>`;
+  div.innerHTML=`<span class="drag-handle" style="cursor:grab;color:#c8bfb0;font-size:14px;flex-shrink:0;user-select:none;touch-action:none">⠿</span><input type="checkbox" id="nc-${i}" ${done?'checked':''}><input class="inp" id="nt-${i}" value="${text}" style="flex:1;font-size:13px;padding:6px 10px" placeholder="Item…"><button onclick="this.parentElement.remove()" style="background:none;border:none;color:${T.muted};font-size:16px;cursor:pointer;padding:4px">×</button>`;
+  const inp=div.querySelector('input:not([type="checkbox"])');
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addCLItem();setTimeout(()=>{const rows=cont.querySelectorAll('input:not([type="checkbox"])');rows[rows.length-1]?.focus();},50);}});
+  // Drag mouse
+  div.addEventListener('dragstart',e=>{e.dataTransfer.effectAllowed='move';div.style.opacity='0.4';cont._dragging=div;});
+  div.addEventListener('dragend',()=>{div.style.opacity='1';cont._dragging=null;});
+  div.addEventListener('dragover',e=>{e.preventDefault();const d=cont._dragging;if(!d||d===div)return;const r=div.getBoundingClientRect();if(e.clientY<r.top+r.height/2)cont.insertBefore(d,div);else cont.insertBefore(d,div.nextSibling);});
+  // Touch drag
+  div.querySelector('.drag-handle').addEventListener('touchstart',e=>{div.style.opacity='0.5';cont._dragging=div;},{passive:true});
+  div.querySelector('.drag-handle').addEventListener('touchmove',e=>{e.preventDefault();const y=e.touches[0].clientY;Array.from(cont.children).forEach(el=>{if(el===cont._dragging)return;const r=el.getBoundingClientRect();if(y>r.top&&y<r.bottom){if(y<r.top+r.height/2)cont.insertBefore(cont._dragging,el);else cont.insertBefore(cont._dragging,el.nextSibling);}});},{passive:false});
+  div.querySelector('.drag-handle').addEventListener('touchend',()=>{div.style.opacity='1';cont._dragging=null;});
   cont.appendChild(div);
-  div.querySelector('input[type="text"],input:not([type="checkbox"])').focus();
-  // Enter key adds next item
-  div.querySelector('input:not([type="checkbox"])').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addCLItem();}});
+  if(!text)inp.focus();
+  return div;
 }
 window.addCLItem=addCLItem;
 
@@ -2228,11 +2324,15 @@ function renderInsights(){
   const wLogs=getEvents().filter(e=>e.type==='wellness');
   const hEvs=getEvents().filter(e=>e.type==='health');
   const avg=(arr,k)=>{const v=arr.map(e=>parseFloat(e[k])).filter(v=>!isNaN(v)&&v>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;};
+  if(!A.insightsMember)A.insightsMember='all';
 
   // Pick challenge based on week number
   const weekNum=Math.floor((new Date()-new Date(new Date().getFullYear(),0,1))/(7*24*60*60*1000));
   const challenge=CHALLENGES[weekNum%CHALLENGES.length];
   const insights=genInsights(wLogs,hEvs);
+
+  // Filter logs by selected member
+  const filteredLogs = A.insightsMember==='all' ? wLogs : wLogs.filter(e=>e.member_id===A.insightsMember);
 
   const memberCards=getMembers().map(member=>{
     const logs=wLogs.filter(e=>e.member_id===member.id);
@@ -2269,12 +2369,18 @@ function renderInsights(){
     </div>`;
   }).join('');
 
+  const memberFilter=`<div style="padding:0 16px 8px;display:flex;gap:6px;overflow-x:auto">
+    <button onclick="A.insightsMember='all';renderInsights()" style="padding:4px 12px;border-radius:99px;border:1.5px solid ${A.insightsMember==='all'?T.sage:T.border};background:${A.insightsMember==='all'?T.sage:'#fff'};color:${A.insightsMember==='all'?'#fff':T.muted};font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0">All</button>
+    ${getMembers().map(m=>`<button onclick="A.insightsMember='${m.id}';renderInsights()" style="padding:4px 12px;border-radius:99px;border:1.5px solid ${A.insightsMember===m.id?m.color:T.border};background:${A.insightsMember===m.id?m.color+'22':'#fff'};color:${A.insightsMember===m.id?m.color:T.muted};font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0">${m.name}</button>`).join('')}
+  </div>`;
+
   document.getElementById('page-insights').innerHTML=`
     <div class="page-header">
       <div class="family-label">${getFamily()?.name||''}</div>
       <div class="page-title">Insights</div>
     </div>
-    <div style="padding:12px 16px 0">
+    ${memberFilter}
+    <div style="padding:4px 16px 0">
       <div style="background:linear-gradient(135deg,${T.sage},${T.sageMid});border-radius:17px;padding:18px;margin-bottom:16px;color:#fff;position:relative;overflow:hidden">
         <div style="position:absolute;right:-10px;top:-10px;font-size:68px;opacity:.12">🌿</div>
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;opacity:.8;margin-bottom:5px">This Week's Family Challenge</div>
@@ -2284,10 +2390,10 @@ function renderInsights(){
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-        ${[{l:'Wellness Logs',v:wLogs.length,ic:'📋',c:T.sage,bg:T.sageLight},
+        ${[{l:'Wellness Logs',v:filteredLogs.length,ic:'📋',c:T.sage,bg:T.sageLight},
            {l:'Health Events',v:hEvs.length,ic:'❤️',c:T.rose,bg:T.roseLight},
            {l:'Illnesses',v:hEvs.filter(e=>e.appt_type==='Illness').length,ic:'🤒',c:T.terra,bg:T.terraLight},
-           {l:'Exercise Days',v:wLogs.filter(e=>e.exercised).length,ic:'🏃',c:T.sky,bg:T.skyLight}
+           {l:'Exercise Days',v:filteredLogs.filter(e=>e.exercised).length,ic:'🏃',c:T.sky,bg:T.skyLight}
         ].map(s=>`<div class="card" style="padding:12px;background:${s.bg};border:none;text-align:center">
           <div style="font-size:22px;margin-bottom:3px">${s.ic}</div>
           <div style="font-size:22px;font-weight:800;color:${s.c};font-family:'Playfair Display',serif">${s.v}</div>
@@ -2295,11 +2401,13 @@ function renderInsights(){
         </div>`).join('')}
       </div>
 
-      ${wLogs.length===0?`<div class="card" style="padding:20px;text-align:center;color:${T.muted};margin-bottom:16px">
+      ${filteredLogs.length===0?`<div class="card" style="padding:20px;text-align:center;color:${T.muted};margin-bottom:16px">
         <div style="font-size:32px;margin-bottom:8px">🌿</div>
         <div style="font-weight:700;margin-bottom:5px">No wellness data yet</div>
         <div style="font-size:13px">Add Wellness Logs in the Calendar to see personalised insights here.</div>
       </div>`:memberCards}
+
+      ${filteredLogs.length>=2?`<div id="insights-charts" style="margin-bottom:16px"></div>`:''}
 
       <div style="font-family:'Playfair Display',serif;font-size:17px;color:${T.ink};margin-bottom:12px">Smart Observations</div>
       ${insights.map(ins=>`<div class="card" style="padding:12px 14px;margin-bottom:10px;border-left:4px solid ${ins.color}">
@@ -2308,7 +2416,114 @@ function renderInsights(){
         <div style="font-size:12px;color:${T.muted};line-height:1.5">${ins.body}</div>
       </div>`).join('')}
     </div>`;
+
+  // Render charts after DOM update
+  if(filteredLogs.length>=2) setTimeout(()=>renderInsightCharts(filteredLogs),50);
 }
+
+// ── INSIGHT CHARTS ────────────────────────────────────────────────────────────
+function renderInsightCharts(logs) {
+  const cont = document.getElementById('insights-charts');
+  if (!cont) return;
+
+  // Sort logs by date
+  const sorted = [...logs].sort((a,b)=>new Date(a.date)-new Date(b.date));
+
+  // Metrics to chart: [key, label, unit, colour, goal]
+  const metrics = [
+    ['weight', 'Weight', 'kg', T.sage, null],
+    ['sleep',  'Sleep',  'h',  T.sky,  8],
+    ['energy', 'Energy', '%',  T.honey, 70],
+    ['hydration','Hydration','L', T.plum, 1.8],
+  ];
+
+  const charts = metrics.map(([key, label, unit, colour, goal]) => {
+    const points = sorted
+      .map(e=>({d:new Date(e.date), v:parseFloat(e[key])}))
+      .filter(p=>!isNaN(p.v)&&p.v>0);
+    if (points.length < 2) return '';
+
+    const vals = points.map(p=>p.v);
+    const minV = Math.min(...vals);
+    const maxV = Math.max(...vals);
+    const range = maxV - minV || 1;
+    const padded_min = minV - range*0.15;
+    const padded_max = maxV + range*0.15;
+    const padded_range = padded_max - padded_min;
+
+    const W = 320, H = 100, PL = 36, PR = 12, PT = 10, PB = 24;
+    const cW = W - PL - PR, cH = H - PT - PB;
+    const xScale = i => PL + (i / (points.length-1)) * cW;
+    const yScale = v => PT + cH - ((v - padded_min) / padded_range) * cH;
+
+    // Line path
+    const pathD = points.map((p,i)=>`${i===0?'M':'L'}${xScale(i).toFixed(1)},${yScale(p.v).toFixed(1)}`).join(' ');
+    // Fill path
+    const fillD = pathD + ` L${xScale(points.length-1).toFixed(1)},${(PT+cH).toFixed(1)} L${PL},${(PT+cH).toFixed(1)} Z`;
+
+    // X-axis labels (max 5)
+    const step = Math.max(1, Math.floor(points.length/5));
+    const xLabels = points.filter((_,i)=>i%step===0||i===points.length-1).map((p,_,arr)=>{
+      const idx = points.indexOf(p);
+      const d = p.d;
+      const label = `${d.getDate()}/${d.getMonth()+1}`;
+      return `<text x="${xScale(idx)}" y="${H-6}" text-anchor="middle" font-size="9" fill="${T.muted}">${label}</text>`;
+    }).join('');
+
+    // Y-axis labels (min, max)
+    const yMin = `<text x="${PL-4}" y="${(PT+cH+4).toFixed(1)}" text-anchor="end" font-size="9" fill="${T.muted}">${minV.toFixed(1)}</text>`;
+    const yMax = `<text x="${PL-4}" y="${(PT+8).toFixed(1)}" text-anchor="end" font-size="9" fill="${T.muted}">${maxV.toFixed(1)}</text>`;
+
+    // Goal line
+    const goalLine = (goal && goal >= padded_min && goal <= padded_max)
+      ? `<line x1="${PL}" y1="${yScale(goal).toFixed(1)}" x2="${W-PR}" y2="${yScale(goal).toFixed(1)}" stroke="${colour}" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+         <text x="${W-PR-2}" y="${(yScale(goal)-3).toFixed(1)}" text-anchor="end" font-size="8" fill="${colour}" opacity="0.7">goal</text>`
+      : '';
+
+    // Data points
+    const dots = points.map((p,i)=>`<circle cx="${xScale(i).toFixed(1)}" cy="${yScale(p.v).toFixed(1)}" r="3" fill="${colour}" stroke="#fff" stroke-width="1.5"/>`).join('');
+
+    // Latest value badge
+    const latest = points[points.length-1];
+    const latestStr = key==='hydration' ? latest.v.toFixed(1) : (Number.isInteger(latest.v)?latest.v:latest.v.toFixed(1));
+
+    // Trend arrow
+    const first = points[0].v, last_v = latest.v;
+    const trendUp = last_v > first;
+    const trendSame = Math.abs(last_v-first)<0.05*first;
+    const trendStr = trendSame ? '→' : (trendUp ? '↑' : '↓');
+    const trendCol = key==='weight'?(trendUp?T.rose:T.sage):(trendUp?T.sage:T.rose);
+
+    return `<div class="card" style="padding:12px 14px;margin-bottom:10px;overflow:hidden">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px">
+        <div style="font-weight:700;font-size:13px;color:${T.ink}">${label}</div>
+        <div style="display:flex;align-items:baseline;gap:6px">
+          <span style="font-size:18px;font-weight:800;color:${colour}">${latestStr}${unit}</span>
+          <span style="font-size:13px;font-weight:700;color:${trendCol}">${trendStr}</span>
+        </div>
+      </div>
+      <svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="overflow:visible">
+        <!-- Grid lines -->
+        <line x1="${PL}" y1="${PT}" x2="${PL}" y2="${PT+cH}" stroke="${T.border}" stroke-width="0.5"/>
+        <line x1="${PL}" y1="${PT+cH}" x2="${W-PR}" y2="${PT+cH}" stroke="${T.border}" stroke-width="0.5"/>
+        ${goalLine}
+        <!-- Fill -->
+        <path d="${fillD}" fill="${colour}" opacity="0.08"/>
+        <!-- Line -->
+        <path d="${pathD}" fill="none" stroke="${colour}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- Dots -->
+        ${dots}
+        <!-- Labels -->
+        ${yMin}${yMax}${xLabels}
+      </svg>
+    </div>`;
+  }).join('');
+
+  cont.innerHTML = `
+    <div style="font-family:'Playfair Display',serif;font-size:17px;color:${T.ink};margin-bottom:12px">Trends</div>
+    ${charts || '<div style="color:'+T.muted+';font-size:13px">Not enough data for charts yet.</div>'}`;
+}
+window.renderInsightCharts = renderInsightCharts;
 
 function genInsights(wLogs,hEvs){
   const ins=[];
