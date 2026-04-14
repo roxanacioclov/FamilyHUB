@@ -518,6 +518,8 @@ function renderCal(){
           return dt>eS&&dt<=eE;
         });
         const isLastDay=e=>e.end_date&&isSameDay(e.end_date,dt);
+        // Multi-day events that START on this day (span into future days)
+        const multiDayStart=de.filter(e=>e.end_date&&!isSameDay(e.date,e.end_date)&&isSameDay(e.date,dt));
         // Regular events on this day (not continuations)
         const dayEvents=de.filter(e=>!spanCont.find(s=>s.id===e.id));
         // Multi-day starts (start today, end later)
