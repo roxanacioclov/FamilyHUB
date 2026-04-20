@@ -106,6 +106,15 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--sage);outline-of
       <div class="form-row"><label class="lbl">Password</label><input class="inp" type="password" id="a-pass" placeholder="••••••••" autocomplete="current-password"></div>
       <button class="btn btn-primary btn-full btn-lg" style="margin-bottom:10px" onclick="doLogin()">Sign In</button>
       <button class="btn btn-secondary btn-full" style="margin-bottom:8px" onclick="switchAuth('signup')">Create account</button>
+      <div style="display:flex;align-items:center;gap:8px;margin:8px 0">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <span style="font-size:11px;color:var(--muted);font-weight:600">OR</span>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+      <button class="btn btn-full" style="background:#fff;border:1.5px solid var(--border);color:var(--ink);font-size:13px;font-weight:600;padding:10px;margin-bottom:8px" onclick="doGoogleAuth()">
+        <svg width="18" height="18" viewBox="0 0 48 48" style="margin-right:8px;vertical-align:middle"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Continue with Google
+      </button>
       <button class="btn btn-full" style="background:none;border:none;color:var(--muted);font-size:12px;text-decoration:underline;cursor:pointer" onclick="switchAuth('forgot')">Forgot password?</button>
       <div id="a-msg" style="margin-top:10px;font-size:13px;color:var(--rose);text-align:center;min-height:18px"></div>
     </div>
@@ -130,7 +139,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--sage);outline-of
   <div class="top-bar">
     <div class="top-logo">🌿 Kinship</div>
     <div style="display:flex;align-items:center;gap:6px">
-      <button id="sample-btn" onclick="toggleSampleMode()" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;background:var(--honey-light);color:var(--honey);border:1px solid var(--honey)44;cursor:pointer;display:none">📋 Sample</button>
+      <button id="sample-btn" onclick="A.family?toggleSampleMode():goTo('settings')" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;background:var(--honey-light);color:var(--honey);border:1px solid var(--honey)44;cursor:pointer;display:none">📋 Sample</button>
       <span id="fam-badge" style="font-size:11px;font-weight:700;color:var(--muted)"></span>
       <button class="btn btn-secondary btn-sm" onclick="doSignOut()">Sign out</button>
     </div>
@@ -367,9 +376,59 @@ async function doForgot(){
 }
 window.doForgot=doForgot;
 
+async function doGoogleAuth(){
+  const{error}=await sb.auth.signInWithOAuth({
+    provider:'google',
+    options:{ redirectTo: window.location.origin + window.location.pathname }
+  });
+  if(error) toast(error.message, true);
+}
+window.doGoogleAuth=doGoogleAuth;
+
+function showPasswordReset(){
+  document.getElementById('loading-screen').style.display='none';
+  document.getElementById('root').style.display='none';
+  document.getElementById('auth-screen').style.display='flex';
+  // Replace auth card content with password reset form
+  document.getElementById('auth-login').style.display='none';
+  document.getElementById('auth-signup').style.display='none';
+  document.getElementById('auth-forgot').style.display='none';
+  const card = document.querySelector('.auth-card');
+  if(card && !document.getElementById('auth-reset')){
+    const div=document.createElement('div');
+    div.id='auth-reset';
+    div.innerHTML=`
+      <div style="font-family:'Playfair Display',serif;font-size:20px;color:var(--sage);text-align:center;margin-bottom:16px">Set New Password</div>
+      <div class="form-row"><label class="lbl">New Password</label><input class="inp" type="password" id="r-pass" placeholder="At least 6 characters" autocomplete="new-password"></div>
+      <div class="form-row"><label class="lbl">Confirm Password</label><input class="inp" type="password" id="r-pass2" placeholder="Repeat password" autocomplete="new-password"></div>
+      <button class="btn btn-primary btn-full btn-lg" onclick="doPasswordReset()">Set New Password</button>
+      <div id="r-msg" style="margin-top:10px;font-size:13px;text-align:center;min-height:18px"></div>`;
+    card.appendChild(div);
+  }
+}
+window.showPasswordReset=showPasswordReset;
+
+async function doPasswordReset(){
+  const pass=document.getElementById('r-pass')?.value;
+  const pass2=document.getElementById('r-pass2')?.value;
+  const msg=document.getElementById('r-msg');
+  if(!pass||pass.length<6){if(msg){msg.textContent='Password must be at least 6 characters.';msg.style.color='var(--rose)';}return;}
+  if(pass!==pass2){if(msg){msg.textContent='Passwords do not match.';msg.style.color='var(--rose)';}return;}
+  if(msg){msg.textContent='Saving…';msg.style.color='var(--muted)';}
+  const{error}=await sb.auth.updateUser({password:pass});
+  if(error){if(msg){msg.textContent=error.message;msg.style.color='var(--rose)';}}
+  else{
+    if(msg){msg.textContent='Password updated! Signing you in…';msg.style.color='var(--sage)';}
+    setTimeout(()=>location.reload(),1500);
+  }
+}
+window.doPasswordReset=doPasswordReset;
+
 async function doSignOut(){
-  await sb.auth.signOut();
-  location.reload();
+  // Don't await network call — stale connection causes hang
+  // Clear session locally and reload; Supabase session expires naturally
+  try { sb.auth.signOut().catch(()=>{}); } catch(_) {}
+  setTimeout(() => location.reload(), 100);
 }
 
 // ── DATA LOADING ──────────────────────────────────────────────────────────────
@@ -396,37 +455,35 @@ async function initApp(user){
   A.user=user;
   document.getElementById('loading-screen').style.display='none';
   try{await loadAll();}catch(e){console.error('Load error',e);}
-  if(!A.family){
-    // Check if user's email matches an existing family_members record (invited user)
-    // Check if this user's email matches an existing family member record
-    let existingMem = null;
-    try {
-      const {data:em} = await sb.from('family_members')
-        .select('id,family_id,name,color,avatar,role')
-        .ilike('email', user.email)  // case-insensitive match
-        .maybeSingle();
-      existingMem = em;
-    } catch(e) { console.error('Email check error', e); }
 
-    if(existingMem && existingMem.family_id){
-      // Link this user account to the existing member record
-      try {
-        await sb.from('family_members')
-          .update({user_id: user.id})
-          .eq('id', existingMem.id);
-      } catch(e) { console.error('Member link error', e); }
-      // Reload to get full family data including the now-linked family
+  // ALWAYS check for unlinked family_members rows matching this user's email
+  // This covers: invited users who already had an account, users added after signup
+  try {
+    const {data:unlinked} = await sb.from('family_members')
+      .select('id,family_id')
+      .ilike('email', user.email)
+      .is('user_id', null);
+    if(unlinked && unlinked.length > 0) {
+      // Link all matching rows (user may belong to multiple families)
+      await sb.from('family_members')
+        .update({user_id: user.id})
+        .ilike('email', user.email)
+        .is('user_id', null);
+      // Reload to pick up newly linked family data
       try{await loadAll();}catch(e){console.error('Reload error',e);}
-      A.showOB=true;
-      A.obFlow='invited';
-    } else {
-      // Brand new user — no family yet. They'll set one up in Settings.
-      // Show Sample family as placeholder until they have their own.
-      A.showOB=true;
-      A.obFlow='new';
     }
+  } catch(e) { console.error('User link error', e); }
+
+  if(!A.family){
+    // No family found — new user with no invite
+    const isFirstLogin = !localStorage.getItem('ks_ob_seen_' + user.id);
+    A.showOB = isFirstLogin;
+    A.obFlow = 'new';
   } else {
-    A.obFlow=null; // Returning user, no onboarding
+    // Has a family (own or linked via invite)
+    const isFirstLogin = !localStorage.getItem('ks_ob_seen_' + user.id);
+    A.showOB = isFirstLogin;
+    A.obFlow = null;
   }
   document.getElementById('root').style.display='flex';
   document.getElementById('auth-screen').style.display='none';
@@ -456,6 +513,10 @@ function goTo(page){
 
 // ── MODAL ─────────────────────────────────────────────────────────────────────
 function showModal(title,body){
+  // Push history state so Back button closes modal instead of leaving app
+  if(!history.state?.modalOpen){
+    history.pushState({modalOpen:true},'');
+  }
   document.getElementById('modal-root').innerHTML=`
     <div class="modal-bg" id="mbg" onclick="if(event.target.id==='mbg')closeModal()">
       <div class="modal-sheet">
@@ -467,7 +528,18 @@ function showModal(title,body){
       </div>
     </div>`;
 }
-function closeModal(){document.getElementById('modal-root').innerHTML='';}
+function closeModal(){
+  document.getElementById('modal-root').innerHTML='';
+  // If we pushed a history state for this modal, go back
+  if(history.state?.modalOpen) history.back();
+}
+// Intercept browser/app back button
+window.addEventListener('popstate', e => {
+  const modal = document.getElementById('modal-root');
+  if(modal && modal.innerHTML) {
+    modal.innerHTML = ''; // close modal without pushing more history
+  }
+});
 
 // ── ONBOARDING ────────────────────────────────────────────────────────────────
 // Single unified onboarding flow — all new users start from Settings
@@ -501,6 +573,8 @@ function renderOB(){
         ${s>0?`<button onclick="document.getElementById('ob-root').innerHTML=''" style="display:block;margin:10px auto 0;background:none;border:none;color:${T.muted};font-size:12px;cursor:pointer">Skip tour</button>`:''}
       </div>
     </div>`;
+  // Mark onboarding as seen after first card shown
+  if(A.user) try { localStorage.setItem('ks_ob_seen_' + A.user.id, '1'); } catch(_) {}
   // Swipe support
   let tx=0;
   const inner=document.getElementById('ob-card-inner');
@@ -552,7 +626,7 @@ function renderCal(){
     if(A.calFMember!=='all'&&!(e.participants||[]).includes(A.calFMember)&&e.member_id!==A.calFMember)return false;
     if(A.calSearch){const q=A.calSearch.toLowerCase();if(![e.title,e.description,e.location,e.activity,...(e.tags||[])].filter(Boolean).join(' ').toLowerCase().includes(q))return false;}
     return true;
-  });
+  }).sort((a,b)=>new Date(a.date)-new Date(b.date));
 
   const evOnDay=d=>filtered.filter(e=>isSameDay(e.date,new Date(vY,vM,d)));
   // Note: toISOLocal used in form to avoid UTC date shift
@@ -746,7 +820,7 @@ function renderCalResults(){
     if(A.calFMember!=='all'&&!(e.participants||[]).includes(A.calFMember)&&e.member_id!==A.calFMember)return false;
     if(A.calSearch){const q=A.calSearch.toLowerCase();if(![e.title,e.description,e.location,e.activity,...(e.tags||[])].filter(Boolean).join(' ').toLowerCase().includes(q))return false;}
     return true;
-  });
+  }).sort((a,b)=>new Date(a.date)-new Date(b.date));
   const fmtTime=d=>{if(!d)return'';const x=new Date(d);return x.getHours().toString().padStart(2,'0')+':'+x.getMinutes().toString().padStart(2,'0');};
   const memColor=e=>{
     if(e.participants_all_family||(!e.member_id&&!(e.participants?.length))||(e.participants?.length>1))return '#9e9488';
@@ -789,7 +863,12 @@ window.renderCalResults=renderCalResults;
 function calClick(d){
   const vY=A.calDate.getFullYear(),vM=A.calDate.getMonth();
   const dt=new Date(vY,vM,d);
-  const allEv=getEvents();
+  const applyFilters = e => {
+    if(A.calFType!=='all' && e.type!==A.calFType) return false;
+    if(A.calFMember!=='all' && !(e.participants||[]).includes(A.calFMember) && e.member_id!==A.calFMember) return false;
+    return true;
+  };
+  const allEv=getEvents().filter(applyFilters);
   // Events that START on this day
   const startingHere=allEv.filter(e=>isSameDay(e.date,dt));
   // Multi-day events that SPAN through this day (started earlier)
@@ -799,9 +878,10 @@ function calClick(d){
     const eE=new Date(e.end_date);eE.setHours(23,59,59,0);
     return dt>eS&&dt<=eE;
   });
-  const allOnDay=[...startingHere,...spanning];
+  const allOnDay=[...startingHere,...spanning].sort((a,b)=>new Date(a.date)-new Date(b.date));
   if(allOnDay.length)showDayModal(dt,allOnDay);
-  else showPicker(dt);
+  else if(A.calFType==='all'&&A.calFMember==='all')showPicker(dt);
+  else showDayModal(dt,[]); // filtered — show empty day modal not picker
 }
 window.calClick=calClick;
 
@@ -1357,7 +1437,12 @@ function openEvForm(type, evId, dateTs, duplicateId) {
         <select class="sel" id="ef-mem"><option value="">Anyone</option>${A.members.map(m=>`<option value="${m.id}"${source?.member_id===m.id?' selected':''}>${m.name}</option>`).join('')}</select></div>
       <div class="form-row"><label class="lbl">Title</label>
         <div style="position:relative"><input class="inp" id="ef-title" value="${source?.title||''}" placeholder="Add a title…"></div></div>
-      <div class="form-row"><label class="lbl">Due Date</label><input class="inp" type="date" id="ef-date" value="${evDate||iDate}"></div>
+      <div class="grid2">
+        <div class="form-row" style="margin:0"><label class="lbl">Due Date</label>
+          <input class="inp" type="date" id="ef-date" value="${evDate||iDate}"></div>
+        <div class="form-row" style="margin:0"><label class="lbl">Time (optional)</label>
+          <input class="inp" type="time" id="ef-stime" value="${source?.date&&!source?.all_day?new Date(source.date).toTimeString().slice(0,5):''}"></div>
+      </div>
       <div class="form-row"><label class="lbl">Actions / Subtasks</label>
         <div id="ef-actions"></div>
         <button type="button" onclick="addChecklistRow('ef-actions')" style="font-size:12px;color:${T.sage};background:none;border:1px dashed ${T.sageMid};border-radius:8px;padding:4px 10px;cursor:pointer;font-weight:600;margin-top:4px">+ Add item</button>
@@ -1594,26 +1679,29 @@ window.addTag = addTag;
 // Wraps any Supabase operation with timeout + one automatic retry
 // Fixes silent failures caused by stale HTTP/2 connections
 async function sbWrite(operation) {
-  const TIMEOUT_MS = 8000;
-  const attempt = async () => {
-    return Promise.race([
-      operation(),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timed out')), TIMEOUT_MS)
-      )
-    ]);
-  };
+  const TIMEOUT_MS = 10000;
+  const withTimeout = (fn) => Promise.race([
+    fn(),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), TIMEOUT_MS))
+  ]);
   try {
-    return await attempt();
+    return await withTimeout(operation);
   } catch (e) {
-    if (e.message === 'Request timed out' || e.message?.includes('fetch')) {
+    const isConn = ['timeout','fetch','network','Failed to fetch'].some(k=>e.message?.includes(k));
+    if (isConn) {
       toast('Connection issue — retrying…');
       await new Promise(r => setTimeout(r, 1000));
+      // Force fresh Supabase client to break out of stale HTTP/2 connection pool
       try {
-        return await attempt();
-      } catch (e2) {
-        toast('Save failed — please check your connection and try again.', true);
-        throw e2;
+        sb = supabase.createClient(SB_URL, SB_KEY, {
+          auth: { persistSession: true, autoRefreshToken: true },
+          global: { fetch: (...a) => fetch(...a) }
+        });
+      } catch(_) {}
+      try { return await withTimeout(operation); }
+      catch (e2) {
+        toast('Save failed. Please refresh and try again.', true);
+        return { error: { message: e2.message }, data: null };
       }
     }
     throw e;
@@ -1667,9 +1755,15 @@ async function saveEv(type, evId, dateTs) {
       data.title = document.getElementById('ef-title')?.value || '';
       if (!data.title) { toast('Please add a title.', true); return; }
       const dv = document.getElementById('ef-date')?.value;
-      data.date = dv ? dv + 'T12:00:00' : new Date().toISOString();
+      const tv = document.getElementById('ef-stime')?.value;
+      if(tv) {
+        data.date = dv ? localDT(dv, tv) : new Date().toISOString();
+        data.all_day = false;
+      } else {
+        data.date = dv ? dv + 'T12:00:00' : new Date().toISOString();
+        data.all_day = true;
+      }
       data.end_date = null;
-      data.all_day = true;
       data.member_id = document.getElementById('ef-mem')?.value || null;
       data.actions = getChecklist('ef-actions');
       data.tags = Array.from(document.querySelectorAll('#ef-tags button[data-sel="true"]')).map(b=>b.dataset.tag).filter(Boolean);
@@ -1849,7 +1943,7 @@ async function saveEv(type, evId, dateTs) {
     toast(evId ? 'Entry updated! ✅' : `Entry added!${eventsToSave.length>1?' ('+eventsToSave.length+' occurrences created)':''}`);
     renderCal();
 
-  } catch(e) { console.error('saveEv error', e); toast('Unexpected error: ' + e.message, true); }
+  } catch(e) { console.error('saveEv error', e); }
 }
 window.saveEv = saveEv;
 
@@ -2566,8 +2660,10 @@ function renderInsights(){
   // Filter logs by selected member
   const filteredLogs = A.insightsMember==='all' ? wLogs : wLogs.filter(e=>e.member_id===A.insightsMember);
 
-  const memberCards=getMembers().map(member=>{
-    const logs=wLogs.filter(e=>e.member_id===member.id);
+  const memberCards=getMembers()
+    .filter(m=>A.insightsMember==='all'||A.insightsMember===m.id)
+    .map(member=>{
+    const logs=filteredLogs.filter(e=>e.member_id===member.id);
     if(!logs.length)return'';
     const aSlp=avg(logs,'sleep'),aEn=avg(logs,'energy'),aHy=avg(logs,'hydration');
     const exDays=logs.filter(l=>l.exercised).length;
@@ -2662,11 +2758,22 @@ function renderInsightCharts(logs) {
   const sorted = [...logs].sort((a,b)=>new Date(a.date)-new Date(b.date));
 
   // Metrics to chart: [key, label, unit, colour, goal]
+  // Get selected member's data for reference values
+  const selMem = A.insightsMember!=='all' ? getMembers().find(m=>m.id===A.insightsMember) : null;
+  const memAge = selMem?.age || null;
+  const avgWeight = logs.filter(l=>l.member_id===selMem?.id&&l.weight).map(l=>l.weight);
+  const latestKg = avgWeight.length ? avgWeight[avgWeight.length-1] : null;
+  // Hydration reference: ~35ml per kg bodyweight, min 1.5L, max 3.5L
+  const hydRef = latestKg ? Math.min(3.5, Math.max(1.5, latestKg * 0.035)).toFixed(1) : 1.8;
   const metrics = [
-    ['weight', 'Weight', 'kg', T.sage, null],
-    ['sleep',  'Sleep',  'h',  T.sky,  8],
-    ['energy', 'Energy', '%',  T.honey, 70],
-    ['hydration','Hydration','L', T.plum, 1.8],
+    ['weight', 'Weight', 'kg', T.sage, null,
+      memAge ? (memAge<12?'Reference: healthy range varies by age & height':memAge<18?'Teens: BMI 18.5–24.9 range':'Adults: BMI 18.5–24.9 range') : null],
+    ['sleep',  'Sleep',  'h',  T.sky,  8,
+      memAge ? (memAge<6?'Ages 3–5: 10–13h recommended':memAge<12?'Ages 6–12: 9–12h recommended':memAge<18?'Teens: 8–10h recommended':'Adults: 7–9h recommended') : 'Recommended: 7–9h for adults'],
+    ['energy', 'Energy', '%',  T.honey, 70,
+      'Aim for 70%+ — low energy often links to sleep or hydration'],
+    ['hydration','Hydration','L', T.plum, parseFloat(hydRef),
+      latestKg ? `~${hydRef}L recommended for ${latestKg}kg (35ml/kg)` : 'Recommended: 1.8–2.5L per day'],
   ];
 
   const charts = metrics.map(([key, label, unit, colour, goal]) => {
@@ -2726,6 +2833,7 @@ function renderInsightCharts(logs) {
     const trendStr = trendSame ? '→' : (trendUp ? '↑' : '↓');
     const trendCol = key==='weight'?(trendUp?T.rose:T.sage):(trendUp?T.sage:T.rose);
 
+    const [mKey,mLabel,mUnit,mCol,,mRef] = [key,label,unit,colour,null,metrics.find(m=>m[0]===key)?.[5]];
     return `<div class="card" style="padding:12px 14px;margin-bottom:10px;overflow:hidden">
       <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px">
         <div style="font-weight:700;font-size:13px;color:${T.ink}">${label}</div>
@@ -2748,6 +2856,7 @@ function renderInsightCharts(logs) {
         <!-- Labels -->
         ${yMin}${yMax}${xLabels}
       </svg>
+      ${metrics.find(m=>m[0]===key)?.[5]?`<div style="font-size:10px;color:${T.muted};margin-top:4px;padding-top:4px;border-top:1px solid ${T.border}">ℹ️ ${metrics.find(m=>m[0]===key)[5]}</div>`:''}
     </div>`;
   }).join('');
 
@@ -2806,7 +2915,7 @@ function renderSettings(){
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
             ${m.is_owner?`<span class="chip" style="background:${T.sageLight};color:${T.sage}">Owner</span>`:''}
             <button onclick="openEditMem('${m.id}')" style="background:${T.parchment};border:1px solid ${T.border};border-radius:7px;padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer;color:${T.muted}">✏️ Edit</button>
-            ${m.email?`<button onclick="sendInvite('${m.email}','${m.id}')" class="btn btn-primary btn-sm" style="font-size:11px;padding:3px 9px">🔗 Invite</button>`:''}
+            ${m.email&&!m.is_owner?`<button onclick="sendInvite('${m.email}','${m.id}')" class="btn btn-primary btn-sm" style="font-size:11px;padding:3px 9px">🔗 Invite</button>`:''}
           </div>
         </div>`).join('')}
       </div>`;
@@ -2931,9 +3040,14 @@ window.saveEditMem=saveEditMem;
 
 async function delMem(id){
   if(!confirm('Remove this family member?'))return;
+  const mem=A.members.find(m=>m.id===id);
   const{error}=await sb.from('family_members').delete().eq('id',id);
   if(error){toast('Error removing: '+error.message,true);return;}
   A.members=A.members.filter(m=>m.id!==id);
+  // Also delete any invitations for this member's email
+  if(mem?.email && A.family){
+    await sb.from('invitations').delete().eq('family_id',A.family.id).ilike('email',mem.email);
+  }
   closeModal();toast('Member removed.');renderSettings();
 }
 window.delMem=delMem;
@@ -2994,7 +3108,13 @@ window.saveMem=saveMem;
 
 async function sendInvite(email,memberId){
   if(!A.family)return;
-  const{data,error}=await sb.from('invitations').insert({family_id:A.family.id,email}).select().single();
+  // Check for existing invitation first — reuse if exists
+  const{data:existing}=await sb.from('invitations').select('*').eq('family_id',A.family.id).ilike('email',email).maybeSingle();
+  let data=existing, error=null;
+  if(!existing){
+    const res=await sb.from('invitations').insert({family_id:A.family.id,email}).select().single();
+    data=res.data; error=res.error;
+  }
   if(error){console.error('Invite error',error);}
   const token=data?.token||'demo';
   const link=`${window.location.origin}${window.location.pathname}?invite=${token}`;
@@ -3013,13 +3133,15 @@ window.sendInvite=sendInvite;
 // ── BOOT ──────────────────────────────────────────────────────────────────────
 // ── SAMPLE MODE ───────────────────────────────────────────────────────────────
 function toggleSampleMode() {
+  // Only allow toggle if user has a real family to switch back to
+  if (!_sampleMode && !A.family) { return; } // no family to switch to
   _sampleMode = !_sampleMode;
   const btn = document.getElementById('sample-btn');
   if (btn) {
-    btn.style.background = _sampleMode ? '#5e8b62' : 'var(--honey-light)';
-    btn.style.color = _sampleMode ? '#fff' : 'var(--honey)';
-    btn.style.border = _sampleMode ? '1px solid #5e8b62' : '1px solid var(--honey)44';
-    btn.textContent = _sampleMode ? '🏠 My Family' : '📋 Sample';
+    btn.style.background = _sampleMode ? 'var(--honey-light)' : 'var(--sage)';
+    btn.style.color = _sampleMode ? 'var(--honey)' : '#fff';
+    btn.style.border = _sampleMode ? '1px solid var(--honey)44' : '1px solid var(--sage)';
+    btn.textContent = _sampleMode ? '📋 Sample' : '🏠 My Family';
   }
   const badge = document.getElementById('fam-badge');
   if (badge) badge.textContent = _sampleMode ? 'Sample Family' : (A.family?.name||'');
@@ -3090,6 +3212,11 @@ async function boot(){
   await handleSession(session);
   // Also listen for future auth changes (login/logout)
   sb.auth.onAuthStateChange(async(event,session)=>{
+    if(event==='PASSWORD_RECOVERY') {
+      // User clicked the reset link — show password update form instead of app
+      showPasswordReset();
+      return;
+    }
     if(event==='SIGNED_IN') await handleSession(session);
     if(event==='SIGNED_OUT') showAuth();
   });
