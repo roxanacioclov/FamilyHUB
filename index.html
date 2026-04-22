@@ -141,22 +141,26 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--sage);outline-of
     <div style="display:flex;align-items:center;gap:6px">
       <button id="sample-btn" onclick="A.family?toggleSampleMode():goTo('settings')" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;background:var(--honey-light);color:var(--honey);border:1px solid var(--honey)44;cursor:pointer;display:none">📋 Sample</button>
       <span id="fam-badge" style="font-size:11px;font-weight:700;color:var(--muted)"></span>
+      <button onclick="goTo('settings')" style="background:none;border:none;font-size:20px;cursor:pointer;padding:2px 6px;color:var(--muted)" title="Settings">⚙️</button>
       <button class="btn btn-secondary btn-sm" onclick="doSignOut()">Sign out</button>
     </div>
   </div>
   <div class="content" id="content">
+    <div id="page-home" class="page"></div>
     <div id="page-calendar" class="page active"></div>
     <div id="page-notebook" class="page"></div>
     <div id="page-meds" class="page"></div>
+    <div id="page-inventory" class="page"></div>
+    <div id="page-meals" class="page"></div>
     <div id="page-insights" class="page"></div>
     <div id="page-settings" class="page"></div>
   </div>
   <nav class="bottom-nav">
+    <button class="nav-btn" data-page="home" onclick="goTo('home')"><span style="font-size:20px;line-height:1">🏠</span>Home<div class="nav-dot"></div></button>
     <button class="nav-btn active" data-page="calendar" onclick="goTo('calendar')"><span style="font-size:20px;line-height:1">🗓</span>Calendar<div class="nav-dot"></div></button>
     <button class="nav-btn" data-page="notebook" onclick="goTo('notebook')"><span style="font-size:20px;line-height:1">📓</span>Notebook<div class="nav-dot"></div></button>
-    <button class="nav-btn" data-page="meds" onclick="goTo('meds')"><span style="font-size:20px;line-height:1">💊</span>Meds<div class="nav-dot"></div></button>
-    <button class="nav-btn" data-page="insights" onclick="goTo('insights')"><span style="font-size:20px;line-height:1">📊</span>Insights<div class="nav-dot"></div></button>
-    <button class="nav-btn" data-page="settings" onclick="goTo('settings')"><span style="font-size:20px;line-height:1">⚙️</span>Settings<div class="nav-dot"></div></button>
+    <button class="nav-btn" data-page="inventory" onclick="goTo('inventory')"><span style="font-size:20px;line-height:1">📦</span>Inventory<div class="nav-dot"></div></button>
+    <button class="nav-btn" data-page="meals" onclick="goTo('meals')"><span style="font-size:20px;line-height:1">🍽</span>Meals<div class="nav-dot"></div></button>
   </nav>
   <div id="modal-root"></div>
   <div id="ob-root"></div>
@@ -304,11 +308,12 @@ const SD_OM = [
 let _sampleMode = false;
 let A={
   user:null,family:null,members:[],events:[],notes:[],noteGroups:[],
-  dailyMeds:[],occMeds:[],
-  page:'calendar',calView:'month',calDate:new Date(),
+  dailyMeds:[],occMeds:[],invProducts:[],
+  page:'home',calView:'month',calDate:new Date(),
   calFType:'all',calFMember:'all',calSearch:'',
   settingsTab:'family',noteFGroup:'all',noteSearch:'',
-  showOB:false,obStep:0,
+  mealsTab:'shopping',invTab:'treatments',
+  showOB:false,obStep:0,obFlow:null,
 };
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -425,10 +430,15 @@ async function doPasswordReset(){
 window.doPasswordReset=doPasswordReset;
 
 async function doSignOut(){
-  // Don't await network call — stale connection causes hang
-  // Clear session locally and reload; Supabase session expires naturally
-  try { sb.auth.signOut().catch(()=>{}); } catch(_) {}
-  setTimeout(() => location.reload(), 100);
+  // Bypass Supabase network entirely — clear session from localStorage directly
+  // This is safe: Supabase reads auth state from localStorage on page load
+  try {
+    // Clear all Supabase auth keys from localStorage
+    Object.keys(localStorage).forEach(k => {
+      if(k.startsWith('sb-') || k.includes('supabase')) localStorage.removeItem(k);
+    });
+  } catch(_) {}
+  location.reload();
 }
 
 // ── DATA LOADING ──────────────────────────────────────────────────────────────
@@ -442,7 +452,7 @@ async function loadAll(){
     sb.from('daily_meds').select('*').order('created_at'),
     sb.from('occasional_meds').select('*').order('created_at'),
   ]);
-  if(fam.data)A.family=fam.data;
+  if(fam.data){A.family=fam.data;A.invProducts=fam.data.inventory_products||[];}
   A.members=mems.data||[];
   A.events=evts.data||[];
   A.noteGroups=ngrps.data||[];
@@ -451,26 +461,53 @@ async function loadAll(){
   A.occMeds=om.data||[];
 }
 
+
+async function seedMedicalGroup(){
+  if(!A.family)return;
+  const{data:grp}=await sb.from('note_groups').insert({
+    family_id:A.family.id, name:'🏥 Medical Reference'
+  }).select().single();
+  if(!grp)return;
+  A.noteGroups.push(grp);
+  const notes=[
+    {title:'🤧 Flu & Cold',content:'**Natural relief for flu & cold**\n\n💊 Supplements: Vitamin C (1000mg/day), Zinc (15-20mg), Elderberry syrup\n\n🌿 Plants: Echinacea tea, Ginger & honey tea, Thyme infusion for cough\n\n🛢 DoTerra oils: OnGuard on feet & chest, Breathe for congestion (diffuse), Frankincense on spine\n\n🌡 Rest, fluids & warm broth. Fever >39°C or >3 days → see doctor.',color:"#f2ddd4",pinned:false},
+    {title:'👂 Ear Pain',content:'**Natural relief for ear pain**\n\n💊 Supplements: Vitamin D3 (immune support), Garlic oil drops (warm, 2-3 drops)\n\n🌿 Plants: Warm chamomile compress on ear, Mullein-garlic ear oil\n\n🛢 DoTerra oils: Basil & Melaleuca (behind ear only, never inside), Lavender for pain relief\n\n⚠️ If fever, discharge or pain >48h → see doctor immediately.',color:"#f2ddd4",pinned:false},
+    {title:'😤 Cough',content:'**Natural relief for cough**\n\n💊 Supplements: Vitamin C, Propolis drops, Honey (1 tsp, children >1yr)\n\n🌿 Plants: Thyme syrup, Marshmallow root tea (soothes throat), Licorice root tea\n\n🛢 DoTerra oils: Breathe blend on chest & diffused, Eucalyptus (adults only), OnGuard\n\n🍵 Steam inhalation with peppermint oil. Stay hydrated.',color:"#f2ddd4",pinned:false},
+    {title:'🤢 Stomach Bug',content:'**Natural relief for stomach issues**\n\n💊 Supplements: Probiotics, Activated charcoal (food poisoning), Electrolytes\n\n🌿 Plants: Ginger tea (nausea), Peppermint tea (cramps), Chamomile (calming)\n\n🛢 DoTerra oils: DigestZen on abdomen, Peppermint for nausea (inhale)\n\n💧 Hydration is key. BRAT diet: Banana, Rice, Applesauce, Toast.',color:"#f2ddd4",pinned:false},
+    {title:'🤕 Headache',content:'**Natural relief for headaches**\n\n💊 Supplements: Magnesium (400mg), Riboflavin/B2, CoQ10\n\n🌿 Plants: Feverfew (migraine prevention), Peppermint tea, Willow bark tea\n\n🛢 DoTerra oils: Peppermint on temples & neck, PastTense blend, Lavender (tension)\n\n💤 Rest in dark room, hydrate, cold/warm compress on neck.',color:"#f2ddd4",pinned:false},
+    {title:'🌡 Fever Management',content:'**Managing fever naturally**\n\n💊 Supplements: Vitamin C, Elderberry, plenty of fluids\n\n🌿 Plants: Elder flower tea (promotes sweating), Linden blossom tea, Echinacea\n\n🛢 DoTerra oils: Peppermint diluted on forehead & feet (cooling), Frankincense\n\n⚠️ <38°C: let it fight. 38-39°C: monitor, comfort. >39°C children / >40°C adults → paracetamol & doctor.',color:"#f2ddd4",pinned:false}
+  ];
+  const toInsert=notes.map(n=>({...n,family_id:A.family.id,group_id:grp.id}));
+  const{data:newNotes}=await sb.from('notes').insert(toInsert).select();
+  if(newNotes)A.notes.push(...newNotes);
+}
 async function initApp(user){
   A.user=user;
   document.getElementById('loading-screen').style.display='none';
   try{await loadAll();}catch(e){console.error('Load error',e);}
 
+  // Seed Medical group if family exists and group doesn't yet
+  if(A.family && !A.noteGroups.find(g=>g.name==='🏥 Medical Reference')){
+    try { await seedMedicalGroup(); } catch(e){ console.warn('Medical group seed error',e); }
+  }
+
   // ALWAYS check for unlinked family_members rows matching this user's email
   // This covers: invited users who already had an account, users added after signup
   try {
-    const {data:unlinked} = await sb.from('family_members')
+    const {data:unlinked, error:ule} = await sb.from('family_members')
       .select('id,family_id')
       .ilike('email', user.email)
       .is('user_id', null);
+    console.log('Unlinked members check:', unlinked, ule);
     if(unlinked && unlinked.length > 0) {
-      // Link all matching rows (user may belong to multiple families)
-      await sb.from('family_members')
+      const {error:upe} = await sb.from('family_members')
         .update({user_id: user.id})
         .ilike('email', user.email)
         .is('user_id', null);
-      // Reload to pick up newly linked family data
-      try{await loadAll();}catch(e){console.error('Reload error',e);}
+      console.log('Update result:', upe ? 'ERROR: '+upe.message : 'OK — '+unlinked.length+' rows linked');
+      if(!upe) {
+        try{await loadAll();}catch(e){console.error('Reload error',e);}
+      }
     }
   } catch(e) { console.error('User link error', e); }
 
@@ -498,7 +535,7 @@ async function initApp(user){
     if (sBtn) sBtn.style.display = 'none';
     if (_sampleMode) toggleSampleMode();
   }
-  goTo('calendar');
+  goTo('home');
   if(A.showOB)renderOB();
 }
 
@@ -508,36 +545,41 @@ function goTo(page){
   document.getElementById('page-'+page).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
   A.page=page;
-  ({calendar:renderCal,notebook:renderNB,meds:renderMeds,insights:renderInsights,settings:renderSettings}[page])?.();
+  ({home:renderHome,calendar:renderCal,notebook:renderNB,meds:renderMeds,inventory:renderInventory,meals:renderMeals,insights:renderInsights,settings:renderSettings}[page])?.();
 }
 
 // ── MODAL ─────────────────────────────────────────────────────────────────────
 function showModal(title,body){
-  // Push history state so Back button closes modal instead of leaving app
-  if(!history.state?.modalOpen){
-    history.pushState({modalOpen:true},'');
-  }
+  // Push history state so back button can close modal
+  try {
+    if(!history.state?.modalOpen) history.pushState({modalOpen:true},'');
+  } catch(_) {}
   document.getElementById('modal-root').innerHTML=`
-    <div class="modal-bg" id="mbg" onclick="if(event.target.id==='mbg')closeModal()">
+    <div class="modal-bg" id="mbg" onclick="if(event.target.id==='mbg')_closeModalDOM()">
       <div class="modal-sheet">
         <div class="modal-head">
           <div class="modal-title">${title}</div>
-          <button class="modal-close" onclick="closeModal()">×</button>
+          <button class="modal-close" onclick="_closeModalDOM()">×</button>
         </div>
         <div class="modal-body">${body}</div>
       </div>
     </div>`;
 }
-function closeModal(){
+// DOM-only close — safe to call before running another function
+function _closeModalDOM(){
   document.getElementById('modal-root').innerHTML='';
-  // If we pushed a history state for this modal, go back
-  if(history.state?.modalOpen) history.back();
 }
-// Intercept browser/app back button
-window.addEventListener('popstate', e => {
+// Public closeModal — also handles history cleanup
+function closeModal(){
+  _closeModalDOM();
+}
+// Back button: close modal if open, otherwise let browser navigate back
+window.addEventListener('popstate', () => {
   const modal = document.getElementById('modal-root');
-  if(modal && modal.innerHTML) {
-    modal.innerHTML = ''; // close modal without pushing more history
+  if(modal && modal.innerHTML.trim()){
+    _closeModalDOM();
+    // Re-push state so the next back press works correctly
+    try { history.pushState({modalOpen:false},''); } catch(_) {}
   }
 });
 
@@ -901,7 +943,7 @@ function showDayModal(dt,de){
         ?(isSpanning?`${fmt(e.date)} → ${fmt(e.end_date)}`:'All day')
         :fmtTime(e.date);
       return`<div style="display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:11px;background:#fff;border:1.5px solid ${mc}33;border-left:4px solid ${mc};margin-bottom:8px">
-        <div onclick="closeModal();setTimeout(()=>viewEv('${e.id}'),50)" style="flex:1;cursor:pointer;display:flex;align-items:center;gap:8px">
+        <div onclick="_closeModalDOM();setTimeout(()=>viewEv('${e.id}'),50)" style="flex:1;cursor:pointer;display:flex;align-items:center;gap:8px">
           <span style="font-size:16px">${ET[e.type].icon}</span>
           <div>
             <div style="font-weight:700;font-size:13px;color:#1e1b16">${e.title||ET[e.type].label}</div>
@@ -909,12 +951,12 @@ function showDayModal(dt,de){
           </div>
         </div>
         ${isSampleMode()?'':`<div style="display:flex;gap:5px">
-          <button onclick="closeModal();openEvForm('${e.type}','${e.id}',null)" style="background:#f5f2ed;border:1px solid #e0d8cc;border-radius:7px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#7a7060">✏️</button>
-          <button onclick="closeModal();delEv('${e.id}')" style="background:#f0d4de;border:1px solid #b8507044;border-radius:7px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#b85070">🗑</button>
+          <button onclick="_closeModalDOM();openEvForm('${e.type}','${e.id}',null)" style="background:#f5f2ed;border:1px solid #e0d8cc;border-radius:7px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#7a7060">✏️</button>
+          <button onclick="_closeModalDOM();delEv('${e.id}')" style="background:#f0d4de;border:1px solid #b8507044;border-radius:7px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#b85070">🗑</button>
         </div>`}
       </div>`;
     }).join('')}
-    ${isSampleMode()?'':`<button class="btn btn-primary btn-full" style="margin-top:4px" onclick="closeModal();showPicker(new Date(${dt.getTime()}))">+ Add to this day</button>`}`
+    ${isSampleMode()?'':`<button class="btn btn-primary btn-full" style="margin-top:4px" onclick="_closeModalDOM();showPicker(new Date(${dt.getTime()}))">+ Add to this day</button>`}`
   );
 }
 
@@ -937,7 +979,7 @@ function showPicker(dt){
   showModal('New Entry',`
     <p style="color:${T.muted};font-size:13px;margin-bottom:14px">What kind of entry?</p>
     ${Object.entries(ET).map(([type,cfg])=>`
-      <button onclick="closeModal();openEvForm('${type}',null,${dt?dt.getTime():'null'})" style="display:flex;align-items:center;gap:13px;padding:13px 15px;border-radius:13px;border:1.5px solid ${cfg.bg};background:${cfg.bg}88;cursor:pointer;text-align:left;width:100%;margin-bottom:8px">
+      <button onclick="_closeModalDOM();openEvForm('${type}',null,${dt?dt.getTime():'null'})" style="display:flex;align-items:center;gap:13px;padding:13px 15px;border-radius:13px;border:1.5px solid ${cfg.bg};background:${cfg.bg}88;cursor:pointer;text-align:left;width:100%;margin-bottom:8px">
         <span style="font-size:24px">${cfg.icon}</span>
         <div><div style="font-weight:700;font-size:14px">${cfg.label}</div><div style="font-size:12px;color:${T.muted};margin-top:2px">${cfg.desc}</div></div>
       </button>`).join('')}`);
@@ -1939,7 +1981,7 @@ async function saveEv(type, evId, dateTs) {
           .then(({data:fd})=>{ if(fd) A.family=fd; });
       }
     }
-    closeModal();
+    _closeModalDOM();
     toast(evId ? 'Entry updated! ✅' : `Entry added!${eventsToSave.length>1?' ('+eventsToSave.length+' occurrences created)':''}`);
     renderCal();
 
@@ -2087,7 +2129,7 @@ function viewEv(id) {
     body += `<div style="background:${T.honeyLight};border-radius:9px;padding:10px;text-align:center;font-size:12px;color:${T.honey};font-weight:600;margin-top:8px">📋 Sample mode — read only</div>`;
   } else {
     body += `<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
-      <button class="btn btn-primary" style="flex:1" onclick="closeModal();openEvForm('${ev.type}','${ev.id}',null)">✏️ Edit</button>
+      <button class="btn btn-primary" style="flex:1" onclick="_closeModalDOM();openEvForm('${ev.type}','${ev.id}',null)">✏️ Edit</button>
       <button class="btn btn-secondary" style="flex:1" onclick="duplicateEv('${ev.id}')">⧉ Duplicate</button>
       <button class="btn btn-danger" style="flex:1" onclick="delEv('${ev.id}')">🗑 Delete</button>
     </div>`;
@@ -2694,6 +2736,7 @@ function renderInsights(){
           <div style="height:100%;width:${Math.min(100,(aSlp/8)*100)}%;background:${aSlp>=7?T.sage:aSlp>=6?T.honey:T.rose};border-radius:99px"></div>
         </div>
       </div>`:''}
+      <div id="charts-${member.id}" style="padding:0 14px 14px"></div>
     </div>`;
   }).join('');
 
@@ -2717,41 +2760,34 @@ function renderInsights(){
         <div style="display:flex;gap:6px;flex-wrap:wrap">${challenge.tips.map(t=>`<span style="background:rgba(255,255,255,.2);border-radius:99px;padding:3px 10px;font-size:11px;font-weight:600">💡 ${t}</span>`).join('')}</div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-        ${[{l:'Wellness Logs',v:filteredLogs.length,ic:'📋',c:T.sage,bg:T.sageLight},
-           {l:'Health Events',v:hEvs.length,ic:'❤️',c:T.rose,bg:T.roseLight},
-           {l:'Illnesses',v:hEvs.filter(e=>e.appt_type==='Illness').length,ic:'🤒',c:T.terra,bg:T.terraLight},
-           {l:'Exercise Days',v:filteredLogs.filter(e=>e.exercised).length,ic:'🏃',c:T.sky,bg:T.skyLight}
-        ].map(s=>`<div class="card" style="padding:12px;background:${s.bg};border:none;text-align:center">
-          <div style="font-size:22px;margin-bottom:3px">${s.ic}</div>
-          <div style="font-size:22px;font-weight:800;color:${s.c};font-family:'Playfair Display',serif">${s.v}</div>
-          <div style="font-size:10px;color:${T.muted};font-weight:700;text-transform:uppercase;letter-spacing:.04em">${s.l}</div>
-        </div>`).join('')}
-      </div>
-
-      ${filteredLogs.length===0?`<div class="card" style="padding:20px;text-align:center;color:${T.muted};margin-bottom:16px">
-        <div style="font-size:32px;margin-bottom:8px">🌿</div>
-        <div style="font-weight:700;margin-bottom:5px">No wellness data yet</div>
-        <div style="font-size:13px">Add Wellness Logs in the Calendar to see personalised insights here.</div>
-      </div>`:memberCards}
-
-      ${filteredLogs.length>=2?`<div id="insights-charts" style="margin-bottom:16px"></div>`:''}
-
       <div style="font-family:'Playfair Display',serif;font-size:17px;color:${T.ink};margin-bottom:12px">Smart Observations</div>
       ${insights.map(ins=>`<div class="card" style="padding:12px 14px;margin-bottom:10px;border-left:4px solid ${ins.color}">
         <div style="font-size:16px;margin-bottom:3px">${ins.icon}</div>
         <div style="font-weight:700;font-size:13px;margin-bottom:2px">${ins.title}</div>
         <div style="font-size:12px;color:${T.muted};line-height:1.5">${ins.body}</div>
       </div>`).join('')}
+
+      ${filteredLogs.length===0?`<div class="card" style="padding:20px;text-align:center;color:${T.muted};margin-bottom:16px">
+        <div style="font-size:32px;margin-bottom:8px">🌿</div>
+        <div style="font-weight:700;margin-bottom:5px">No wellness data yet</div>
+        <div style="font-size:13px">Add Wellness Logs in the Calendar to see personalised insights here.</div>
+      </div>`:memberCards}
     </div>`;
 
-  // Render charts after DOM update
-  if(filteredLogs.length>=2) setTimeout(()=>renderInsightCharts(filteredLogs),50);
+  // Render per-member charts into each member card
+  setTimeout(()=>{
+    getMembers()
+      .filter(m=>A.insightsMember==='all'||A.insightsMember===m.id)
+      .forEach(m=>{
+        const mLogs = filteredLogs.filter(e=>e.member_id===m.id);
+        if(mLogs.length>=2) renderInsightCharts(mLogs, 'charts-'+m.id);
+      });
+  },50);
 }
 
 // ── INSIGHT CHARTS ────────────────────────────────────────────────────────────
-function renderInsightCharts(logs) {
-  const cont = document.getElementById('insights-charts');
+function renderInsightCharts(logs, containerId) {
+  const cont = document.getElementById(containerId || 'insights-charts');
   if (!cont) return;
 
   // Sort logs by date
@@ -2885,6 +2921,361 @@ function genInsights(wLogs,hEvs){
   return ins;
 }
 
+
+// ── HOME PAGE ──────────────────────────────────────────────────────────────────
+function renderHome(){
+  const today=todayD();
+  const fmtT=d=>{if(!d)return'';const x=new Date(d);return x.getHours().toString().padStart(2,'0')+':'+x.getMinutes().toString().padStart(2,'0');};
+  const todayEvs=getEvents().filter(e=>isSameDay(e.date,today)&&e.type!=='wellness')
+    .sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const upcomingEvs=getEvents().filter(e=>{
+    const d=new Date(e.date);d.setHours(0,0,0,0);
+    const diff=(d-today)/(86400000);
+    return diff>0&&diff<=7&&e.type!=='wellness';
+  }).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,5);
+
+  // Action items due (tasks with today's date or past due)
+  const dueActions=getEvents().filter(e=>e.type==='task'&&e.actions?.some(a=>!a.done)&&new Date(e.date)<=new Date());
+  // Notebook checklist items
+  const nbActions=getNotes().filter(n=>n.checklist?.some(c=>!c.done)&&n.group_id===getNoteGroups().find(g=>g.name==='📅 Calendar Actions')?.id);
+
+  const memColor=e=>{
+    if(e.participants_all_family||(!e.member_id&&!(e.participants?.length))||(e.participants?.length>1))return '#9e9488';
+    const mid=e.member_id||(e.participants?.[0]);
+    const m=getMembers().find(m=>m.id===mid);
+    return m?m.color:'#9e9488';
+  };
+
+  const evCard=e=>`<div onclick="viewEv('${e.id}')" style="display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:10px;background:#fff;border-left:3px solid ${memColor(e)};margin-bottom:6px;cursor:pointer">
+    <span style="font-size:16px">${ET[e.type].icon}</span>
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.title||ET[e.type].label}</div>
+      <div style="font-size:11px;color:${T.muted}">${e.all_day?'All day':fmtT(e.date)}${e.location?' · '+e.location:''}</div>
+    </div>
+  </div>`;
+
+  document.getElementById('page-home').innerHTML=`
+    <div class="page-header">
+      <div class="family-label">${getFamily()?.name||''}</div>
+      <div class="page-title" style="font-size:20px">Good ${new Date().getHours()<12?'morning':'afternoon'} 👋</div>
+    </div>
+    <div style="padding:12px 16px">
+
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button onclick="showPicker(new Date())" style="flex:1;padding:12px;border-radius:12px;background:${T.sage};color:#fff;border:none;font-weight:700;font-size:13px;cursor:pointer">+ Calendar Entry</button>
+        <button onclick="goTo('meals')" style="flex:1;padding:12px;border-radius:12px;background:${T.honeyLight};color:${T.honey};border:1px solid ${T.honey}44;font-weight:700;font-size:13px;cursor:pointer">🛒 Shopping</button>
+      </div>
+
+      <div style="font-weight:800;font-size:14px;color:${T.ink};margin-bottom:8px">Today — ${fmt(today)}</div>
+      ${todayEvs.length?todayEvs.map(evCard).join(''):`<div style="font-size:13px;color:${T.muted};padding:10px 0;font-style:italic">No events today. Enjoy the day!</div>`}
+
+      ${upcomingEvs.length?`
+      <div style="font-weight:800;font-size:14px;color:${T.ink};margin:14px 0 8px">Coming up this week</div>
+      ${upcomingEvs.map(e=>evCard(e)).join('')}`:''}
+
+      ${dueActions.length||nbActions.length?`
+      <div style="font-weight:800;font-size:14px;color:${T.ink};margin:14px 0 8px">Action items</div>
+      ${[...dueActions.flatMap(e=>(e.actions||[]).filter(a=>!a.done).slice(0,3).map(a=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 11px;border-radius:10px;background:#fff;margin-bottom:5px">
+          <span style="font-size:14px">✅</span>
+          <div style="flex:1;font-size:13px;font-weight:600">${a.text}</div>
+          <div style="font-size:11px;color:${T.muted}">${e.title}</div>
+        </div>`)),
+        ...nbActions.flatMap(n=>(n.checklist||[]).filter(c=>!c.done).slice(0,2).map(c=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 11px;border-radius:10px;background:#fff;margin-bottom:5px">
+          <span style="font-size:14px">📋</span>
+          <div style="flex:1;font-size:13px;font-weight:600">${c.text}</div>
+          <div style="font-size:11px;color:${T.muted}">${n.title}</div>
+        </div>`))
+      ].join('')}`:''}
+
+    </div>`;
+}
+window.renderHome=renderHome;
+
+
+// ── MEALS PAGE ─────────────────────────────────────────────────────────────────
+function renderMeals(){
+  if(!A.mealsTab) A.mealsTab='shopping';
+  const TABS=[{id:'shopping',label:'🛒 Shopping'},{id:'planner',label:'📅 Meal Planner'},{id:'ideas',label:'💡 Ideas'}];
+
+  // Shopping lists from Notebook (notes tagged as shopping or in Shopping group)
+  const shopGroup=getNoteGroups().find(g=>g.name==='🛒 Shopping');
+  const shopLists=shopGroup?getNotes().filter(n=>n.group_id===shopGroup.id):[];
+
+  // Weekly menu note
+  const menuGroup=getNoteGroups().find(g=>g.name==='📅 Weekly Menu');
+  const menuNote=menuGroup?getNotes().filter(n=>n.group_id===menuGroup.id)[0]:null;
+
+  let tc='';
+  if(A.mealsTab==='shopping'){
+    tc=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-weight:700;font-size:14px">Shopping Lists</div>
+      <button class="btn btn-primary btn-sm" onclick="addShoppingList()">+ New List</button>
+    </div>
+    ${shopLists.length?shopLists.map(n=>`<div onclick="openNote('${n.id}')" class="card" style="padding:12px 14px;margin-bottom:8px;cursor:pointer">
+      <div style="font-weight:700;font-size:13px;margin-bottom:4px">${n.title}</div>
+      <div style="font-size:11px;color:${T.muted}">${(n.checklist||[]).filter(c=>!c.done).length} items remaining · ${(n.checklist||[]).filter(c=>c.done).length} checked off</div>
+    </div>`).join(''):
+    `<div style="text-align:center;padding:20px;color:${T.muted}">
+      <div style="font-size:32px;margin-bottom:8px">🛒</div>
+      <div style="font-weight:700;margin-bottom:6px">No shopping lists yet</div>
+      <button class="btn btn-primary" onclick="addShoppingList()">Create your first list</button>
+    </div>`}`;
+  } else if(A.mealsTab==='planner'){
+    // Meal idea lists
+    const mealGroups=['🌅 Breakfast','☀️ Lunch','🌙 Dinner','🍎 Snacks'].map(name=>{
+      const grp=getNoteGroups().find(g=>g.name===name);
+      const note=grp?getNotes().filter(n=>n.group_id===grp.id)[0]:null;
+      return{name,note};
+    });
+    tc=`<div style="margin-bottom:12px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:4px">Weekly Menu</div>
+      <div onclick="${menuNote?`openNote('${menuNote.id}')`:'createWeeklyMenu()'}" class="card" style="padding:12px 14px;cursor:pointer;border:1.5px dashed ${T.sageMid};background:${T.sageLight}">
+        ${menuNote?`<div style="font-size:13px;font-weight:600;color:${T.sage}">📅 View & edit this week's menu</div>`:
+        `<div style="text-align:center;color:${T.sage};font-weight:700">+ Set up weekly menu</div>`}
+      </div>
+    </div>
+    <div style="font-weight:700;font-size:14px;margin-bottom:8px">Meal Ideas</div>
+    ${mealGroups.map(({name,note})=>`<div onclick="${note?`openNote('${note.id}')`:`createMealIdeas('${name}')`}" class="card" style="padding:10px 14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">${name.split(' ')[0]}</span>
+      <div><div style="font-weight:700;font-size:13px">${name.split(' ').slice(1).join(' ')}</div>
+      <div style="font-size:11px;color:${T.muted}">${note?(note.checklist||[]).length+' ideas':'Tap to set up'}</div></div>
+    </div>`).join('')}`;
+  } else {
+    // AI chat for meal ideas
+    tc=`<div style="display:flex;flex-direction:column;height:calc(100vh - 260px)">
+      <div id="meal-chat" style="flex:1;overflow-y:auto;padding-bottom:8px">
+        <div style="background:${T.sageLight};border-radius:12px;padding:12px;margin-bottom:10px">
+          <div style="font-weight:700;font-size:13px;color:${T.sage};margin-bottom:4px">🍽 Meal Assistant</div>
+          <div style="font-size:13px;color:${T.ink}">Ask me for meal ideas, recipes, what to cook with what you have, or dietary suggestions for your family!</div>
+        </div>
+        <div id="meal-chat-messages"></div>
+      </div>
+      <div style="display:flex;gap:8px;padding-top:8px;border-top:1px solid ${T.border}">
+        <input class="inp" id="meal-chat-inp" placeholder="Ask for meal ideas…" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();sendMealChat();}">
+        <button class="btn btn-primary" onclick="sendMealChat()">Send</button>
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('page-meals').innerHTML=`
+    <div class="page-header">
+      <div class="family-label">${getFamily()?.name||''}</div>
+      <div class="page-title">Meals</div>
+    </div>
+    <div class="tabs">${TABS.map(t=>`<button class="tab ${A.mealsTab===t.id?'active':''}" onclick="A.mealsTab='${t.id}';renderMeals()">${t.label}</button>`).join('')}</div>
+    <div style="padding:14px 16px">${tc}</div>`;
+}
+window.renderMeals=renderMeals;
+
+async function addShoppingList(){
+  if(isSampleMode()){toast('Switch to My Family to create lists.',true);return;}
+  let grp=A.noteGroups.find(g=>g.name==='🛒 Shopping');
+  if(!grp){
+    const{data}=await sb.from('note_groups').insert({family_id:A.family.id,name:'🛒 Shopping'}).select().single();
+    if(data){A.noteGroups.push(data);grp=data;}
+  }
+  if(!grp)return;
+  // Pre-fill with a standard shopping list
+  const defaultItems=[
+    {text:'🥛 Milk',done:false},{text:'🥚 Eggs',done:false},{text:'🍞 Bread',done:false},
+    {text:'🧀 Cheese',done:false},{text:'🐔 Chicken',done:false},{text:'🥦 Broccoli',done:false},
+    {text:'🍎 Apples',done:false},{text:'🍌 Bananas',done:false},{text:'🍅 Tomatoes',done:false},
+    {text:'🧅 Onions',done:false},{text:'🥕 Carrots',done:false},{text:'🫒 Olive oil',done:false},
+    {text:'🍝 Pasta',done:false},{text:'🍚 Rice',done:false},{text:'🥫 Tinned tomatoes',done:false},
+  ];
+  const listCount=A.notes.filter(n=>n.group_id===grp.id).length;
+  const title=listCount===0?'Shopping List':'Shopping List '+(listCount+1);
+  const{data}=await sb.from('notes').insert({
+    family_id:A.family.id,title,group_id:grp.id,
+    checklist:defaultItems,color:'#d4e8d6',pinned:false
+  }).select().single();
+  if(data){A.notes.push(data);openNote(data.id);}
+}
+window.addShoppingList=addShoppingList;
+
+async function createWeeklyMenu(){
+  if(isSampleMode()){toast('Switch to My Family first.',true);return;}
+  let grp=A.noteGroups.find(g=>g.name==='📅 Weekly Menu');
+  if(!grp){
+    const{data}=await sb.from('note_groups').insert({family_id:A.family.id,name:'📅 Weekly Menu'}).select().single();
+    if(data){A.noteGroups.push(data);grp=data;}
+  }
+  if(!grp)return;
+  const menuContent=`Mon: Pasta bolognese | Greek salad
+Tue: Grilled chicken & veg | Soup
+Wed: Fish tacos | Quinoa salad
+Thu: Lentil curry & rice | Omelette
+Fri: Pizza night | Leftovers
+Sat: BBQ / eat out | Pancakes
+Sun: Roast chicken | French toast`;
+  const{data}=await sb.from('notes').insert({
+    family_id:A.family.id,title:'This Week\'s Menu',group_id:grp.id,
+    content:menuContent,color:'#f5e4c4',pinned:true
+  }).select().single();
+  if(data){A.notes.push(data);openNote(data.id);}
+}
+window.createWeeklyMenu=createWeeklyMenu;
+
+async function createMealIdeas(groupName){
+  if(isSampleMode()){toast('Switch to My Family first.',true);return;}
+  let grp=A.noteGroups.find(g=>g.name===groupName);
+  if(!grp){
+    const{data}=await sb.from('note_groups').insert({family_id:A.family.id,name:groupName}).select().single();
+    if(data){A.noteGroups.push(data);grp=data;}
+  }
+  if(!grp)return;
+  const ideas={
+    '🌅 Breakfast':[{text:'Overnight oats with berries',done:false},{text:'Avocado toast & eggs',done:false},{text:'Greek yogurt with honey & granola',done:false},{text:'Smoothie bowl',done:false},{text:'Banana pancakes',done:false}],
+    '☀️ Lunch':[{text:'Grilled chicken salad',done:false},{text:'Vegetable soup & bread',done:false},{text:'Tuna wraps',done:false},{text:'Quinoa buddha bowl',done:false},{text:'Tomato & mozzarella',done:false}],
+    '🌙 Dinner':[{text:'Salmon & roasted vegetables',done:false},{text:'Pasta bolognese',done:false},{text:'Chicken stir fry & rice',done:false},{text:'Lentil dahl & naan',done:false},{text:'Turkey meatballs & zucchini noodles',done:false}],
+    '🍎 Snacks':[{text:'Apple & almond butter',done:false},{text:'Hummus & carrot sticks',done:false},{text:'Mixed nuts & dried fruit',done:false},{text:'Rice cakes with cottage cheese',done:false},{text:'Dark chocolate & berries',done:false}],
+  };
+  const{data}=await sb.from('notes').insert({
+    family_id:A.family.id,title:groupName.split(' ').slice(1).join(' ')+' Ideas',
+    group_id:grp.id,checklist:ideas[groupName]||[],color:'#d0e4f0',pinned:false
+  }).select().single();
+  if(data){A.notes.push(data);openNote(data.id);}
+}
+window.createMealIdeas=createMealIdeas;
+
+async function sendMealChat(){
+  const inp=document.getElementById('meal-chat-inp');
+  const msgs=document.getElementById('meal-chat-messages');
+  if(!inp||!msgs||!inp.value.trim())return;
+  const q=inp.value.trim(); inp.value='';
+  msgs.innerHTML+=`<div style="text-align:right;margin-bottom:8px"><div style="display:inline-block;background:${T.sage};color:#fff;border-radius:12px 12px 2px 12px;padding:8px 12px;font-size:13px;max-width:85%">${q}</div></div>`;
+  msgs.innerHTML+=`<div id="meal-typing" style="margin-bottom:8px"><div style="display:inline-block;background:${T.parchment};border-radius:12px 12px 12px 2px;padding:8px 12px;font-size:13px;color:${T.muted}">Thinking…</div></div>`;
+  msgs.scrollTop=msgs.scrollHeight;
+  try{
+    const famCtx=`Family: ${getFamily()?.name||'Unknown'}. Members: ${getMembers().map(m=>m.name+(m.age?' (age '+m.age+')':'')).join(', ')}.`;
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:600,
+        system:`You are a friendly family meal assistant for the Kinship app. ${famCtx} Give practical, healthy meal ideas and simple recipes. Keep responses concise and friendly.`,
+        messages:[{role:'user',content:q}]
+      })
+    });
+    const d=await resp.json();
+    const reply=d.content?.[0]?.text||'Sorry, I could not get a response.';
+    document.getElementById('meal-typing')?.remove();
+    msgs.innerHTML+=`<div style="margin-bottom:8px"><div style="display:inline-block;background:${T.parchment};border-radius:12px 12px 12px 2px;padding:8px 12px;font-size:13px;max-width:90%;line-height:1.5">${reply.replace(/\n/g,'<br>')}</div></div>`;
+    msgs.scrollTop=msgs.scrollHeight;
+  }catch(e){document.getElementById('meal-typing')?.remove();toast('Chat error: '+e.message,true);}
+}
+window.sendMealChat=sendMealChat;
+
+
+// ── INVENTORY PAGE ─────────────────────────────────────────────────────────────
+function renderInventory(){
+  if(!A.invTab) A.invTab='treatments';
+  const TABS=[{id:'treatments',label:'💊 Treatments'},{id:'products',label:'📦 Products'}];
+  let tc='';
+  if(A.invTab==='treatments'){
+    // Reuse full renderMeds content
+    const medsPage=document.createElement('div');
+    renderMeds();
+    const medsContent=document.getElementById('page-meds')?.innerHTML||'';
+    tc=medsContent;
+  } else {
+    // Products tab — generic inventory items
+    const items=A.invProducts||[];
+    tc=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-weight:700;font-size:14px">Products & Supplies</div>
+      <button class="btn btn-primary btn-sm" onclick="openAddProduct()">+ Add Item</button>
+    </div>
+    ${items.length?`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr>${['Item','Category','Stock','Expiry','Cost',''].map(h=>`<th style="text-align:left;padding:6px 8px;background:${T.parchment};border-bottom:2px solid ${T.border};font-weight:700;color:${T.muted};white-space:nowrap">${h}</th>`).join('')}</tr></thead>
+      <tbody>${items.map(item=>`<tr style="border-bottom:1px solid ${T.border}">
+        <td style="padding:7px 8px;font-weight:700">${item.name}</td>
+        <td style="padding:7px 8px;color:${T.muted}">${item.category||'—'}</td>
+        <td style="padding:7px 8px">${item.stock||0} ${item.unit||''}</td>
+        <td style="padding:7px 8px;color:${item.expiry&&new Date(item.expiry)<new Date()?T.rose:T.muted}">${item.expiry?fmt(item.expiry):'—'}</td>
+        <td style="padding:7px 8px">${item.cost?'€'+item.cost:'—'}</td>
+        <td style="padding:7px 8px"><button onclick="delProduct('${item.id}')" style="background:none;border:none;color:${T.muted};cursor:pointer">🗑</button></td>
+      </tr>`).join('')}</tbody>
+    </table></div>`:
+    `<div style="text-align:center;padding:24px;color:${T.muted}">
+      <div style="font-size:36px;margin-bottom:10px">📦</div>
+      <div style="font-weight:700;margin-bottom:6px">No products yet</div>
+      <div style="font-size:13px;margin-bottom:14px">Track cosmetics, food items, supplies — anything with stock or an expiry date.</div>
+      <button class="btn btn-primary" onclick="openAddProduct()">Add first item</button>
+    </div>`}`;
+  }
+
+  document.getElementById('page-inventory').innerHTML=`
+    <div class="page-header">
+      <div class="family-label">${getFamily()?.name||''}</div>
+      <div class="page-title">Inventory</div>
+    </div>
+    <div class="tabs">${TABS.map(t=>`<button class="tab ${A.invTab===t.id?'active':''}" onclick="A.invTab='${t.id}';renderInventory()">${t.label}</button>`).join('')}</div>
+    <div style="padding:14px 16px">${tc}</div>`;
+
+  // If treatments tab, re-render meds content inside inventory
+  if(A.invTab==='treatments') setTimeout(()=>{
+    renderMeds();
+    const mc=document.getElementById('page-meds')?.innerHTML;
+    if(mc){
+      const inv=document.getElementById('page-inventory');
+      if(inv) inv.querySelector('[style*="padding:14px 16px"]').innerHTML=mc.replace(/<div class="page-header">[\s\S]*?<\/div>\s*<\/div>/,'');
+    }
+  },50);
+}
+window.renderInventory=renderInventory;
+
+function openAddProduct(){
+  if(isSampleMode()){toast('Switch to My Family first.',true);return;}
+  showModal('Add Product / Supply',`
+    <div class="form-row"><label class="lbl">Item name *</label><input class="inp" id="ap-name" placeholder="e.g. Sunscreen SPF50" autofocus></div>
+    <div class="grid2">
+      <div class="form-row" style="margin:0"><label class="lbl">Category</label>
+        <select class="sel" id="ap-cat"><option value="">Select…</option>${['Cosmetics','Food','Medication','Baby supplies','Cleaning','Other'].map(c=>`<option>${c}</option>`).join('')}</select>
+      </div>
+      <div class="form-row" style="margin:0"><label class="lbl">Unit</label>
+        <input class="inp" id="ap-unit" placeholder="ml, pcs, kg…">
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="form-row" style="margin:0"><label class="lbl">Stock qty</label><input class="inp" type="number" id="ap-stock" placeholder="0" onfocus="this.select()"></div>
+      <div class="form-row" style="margin:0"><label class="lbl">Cost (€)</label><input class="inp" type="number" id="ap-cost" step="0.01" placeholder="0.00" onfocus="this.select()"></div>
+    </div>
+    <div class="form-row"><label class="lbl">Expiry date</label><input class="inp" type="date" id="ap-exp"></div>
+    <div class="form-row"><label class="lbl">Notes</label><textarea class="inp" id="ap-notes" rows="2" placeholder="Provider, where to buy, etc." style="resize:none"></textarea></div>
+    <button class="btn btn-primary btn-full" onclick="saveProduct()">Add to Inventory</button>`);
+}
+window.openAddProduct=openAddProduct;
+
+async function saveProduct(){
+  const name=document.getElementById('ap-name')?.value?.trim();
+  if(!name){toast('Please enter an item name.',true);return;}
+  const item={
+    id:'inv_'+Date.now(),
+    name,
+    category:document.getElementById('ap-cat')?.value||'',
+    unit:document.getElementById('ap-unit')?.value||'',
+    stock:parseFloat(document.getElementById('ap-stock')?.value)||0,
+    cost:parseFloat(document.getElementById('ap-cost')?.value)||null,
+    expiry:document.getElementById('ap-exp')?.value||null,
+    notes:document.getElementById('ap-notes')?.value||'',
+  };
+  if(!A.invProducts) A.invProducts=[];
+  A.invProducts.push(item);
+  // Persist in family record as JSON
+  await sb.from('families').update({inventory_products:A.invProducts}).eq('id',A.family.id);
+  _closeModalDOM();toast('Item added! ✅');renderInventory();
+}
+window.saveProduct=saveProduct;
+
+async function delProduct(id){
+  A.invProducts=(A.invProducts||[]).filter(p=>p.id!==id);
+  await sb.from('families').update({inventory_products:A.invProducts}).eq('id',A.family.id);
+  toast('Item removed.');renderInventory();
+}
+window.delProduct=delProduct;
+
 // ── SETTINGS ──────────────────────────────────────────────────────────────────
 function renderSettings(){
   const fam=getFamily(),members=getMembers();
@@ -2946,11 +3337,16 @@ function renderSettings(){
     </div>`;
   }
 
+  const cu=A.user;
   document.getElementById('page-settings').innerHTML=`
     <div class="page-header">
       <div class="family-label">${getFamily()?.name||''}</div>
       <div class="page-title">Settings</div>
     </div>
+    ${cu?`<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:${T.sageLight};border-bottom:1px solid ${T.border}">
+      <div style="width:36px;height:36px;border-radius:50%;background:${T.sage};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;flex-shrink:0">${(cu.user_metadata?.name||cu.email||'U')[0].toUpperCase()}</div>
+      <div><div style="font-weight:700;font-size:13px;color:${T.ink}">${cu.user_metadata?.name||'My Account'}</div><div style="font-size:11px;color:${T.muted}">${cu.email||''}</div></div>
+    </div>`:''}
     <div class="tabs">${TABS.map(t=>`<button class="tab ${A.settingsTab===t.id?'active':''}" onclick="A.settingsTab='${t.id}';renderSettings()">${t.label}</button>`).join('')}</div>
     <div style="padding:14px 16px">${tc}</div>`;
 }
