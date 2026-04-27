@@ -1431,10 +1431,6 @@ function openEvForm(type, evId, dateTs, duplicateId) {
         <div class="form-row"><label class="lbl">Participants</label>${partButtons()}</div>
         <div class="form-row"><label class="lbl">Title</label>
           <div style="position:relative"><input class="inp" id="ef-title" value="${source?.title||''}" placeholder="e.g. Antibiotic course"></div></div>
-        <div class="form-row"><label class="lbl">Event Type</label>
-          <select class="sel" id="ef-apt" onchange="reloadHealthForm(this.value,'${evId||''}',${dateTs||'null'})">
-            ${['Appointment','Treatment','Illness'].map(t=>`<option${hType===t?' selected':''}>${t}</option>`).join('')}
-          </select></div>
         <div class="grid2">
           <div class="form-row" style="margin:0"><label class="lbl">Start Date</label><input class="inp" type="date" id="ef-date" value="${startDate}" onchange="syncEndDate(this.value)"></div>
           <div class="form-row" style="margin:0"><label class="lbl">End Date</label><input class="inp" type="date" id="ef-enddate" value="${endDate}"></div>
@@ -1458,10 +1454,6 @@ function openEvForm(type, evId, dateTs, duplicateId) {
         <div class="form-row"><label class="lbl">Participants</label>${partButtons()}</div>
         <div class="form-row"><label class="lbl">Title</label>
           <div style="position:relative"><input class="inp" id="ef-title" value="${source?.title||''}" placeholder="e.g. Flu"></div></div>
-        <div class="form-row"><label class="lbl">Event Type</label>
-          <select class="sel" id="ef-apt" onchange="reloadHealthForm(this.value,'${evId||''}',${dateTs||'null'})">
-            ${['Appointment','Treatment','Illness'].map(t=>`<option${hType===t?' selected':''}>${t}</option>`).join('')}
-          </select></div>
         <div class="grid2">
           <div class="form-row" style="margin:0"><label class="lbl">Start Date</label><input class="inp" type="date" id="ef-date" value="${startDate}" onchange="syncEndDate(this.value)"></div>
           <div class="form-row" style="margin:0"><label class="lbl">End Date</label><input class="inp" type="date" id="ef-enddate" value="${endDate}"></div>
@@ -2937,7 +2929,7 @@ function renderHome(){
   // Action items due (tasks with today's date or past due)
   const dueActions=getEvents().filter(e=>e.type==='task'&&e.actions?.some(a=>!a.done)&&new Date(e.date)<=new Date());
   // Notebook checklist items
-  const nbActions=getNotes().filter(n=>n.checklist?.some(c=>!c.done)&&n.group_id===getNoteGroups().find(g=>g.name==='📅 Calendar Actions')?.id);
+  const nbActions=getNotes().filter(n=>n.checklist?.some(c=>!c.done)&&n.group_id===getGroups().find(g=>g.name==='📅 Calendar Actions')?.id);
 
   const memColor=e=>{
     if(e.participants_all_family||(!e.member_id&&!(e.participants?.length))||(e.participants?.length>1))return '#9e9488';
@@ -3000,11 +2992,11 @@ function renderMeals(){
   const TABS=[{id:'shopping',label:'🛒 Shopping'},{id:'planner',label:'📅 Meal Planner'},{id:'ideas',label:'💡 Ideas'}];
 
   // Shopping lists from Notebook (notes tagged as shopping or in Shopping group)
-  const shopGroup=getNoteGroups().find(g=>g.name==='🛒 Shopping');
+  const shopGroup=getGroups().find(g=>g.name==='🛒 Shopping');
   const shopLists=shopGroup?getNotes().filter(n=>n.group_id===shopGroup.id):[];
 
   // Weekly menu note
-  const menuGroup=getNoteGroups().find(g=>g.name==='📅 Weekly Menu');
+  const menuGroup=getGroups().find(g=>g.name==='📅 Weekly Menu');
   const menuNote=menuGroup?getNotes().filter(n=>n.group_id===menuGroup.id)[0]:null;
 
   let tc='';
@@ -3025,7 +3017,7 @@ function renderMeals(){
   } else if(A.mealsTab==='planner'){
     // Meal idea lists
     const mealGroups=['🌅 Breakfast','☀️ Lunch','🌙 Dinner','🍎 Snacks'].map(name=>{
-      const grp=getNoteGroups().find(g=>g.name===name);
+      const grp=getGroups().find(g=>g.name===name);
       const note=grp?getNotes().filter(n=>n.group_id===grp.id)[0]:null;
       return{name,note};
     });
@@ -3175,11 +3167,8 @@ function renderInventory(){
   const TABS=[{id:'treatments',label:'💊 Treatments'},{id:'products',label:'📦 Products'}];
   let tc='';
   if(A.invTab==='treatments'){
-    // Reuse full renderMeds content
-    const medsPage=document.createElement('div');
-    renderMeds();
-    const medsContent=document.getElementById('page-meds')?.innerHTML||'';
-    tc=medsContent;
+    // Treatments tab renders via renderMeds into page-meds, then we copy content
+    tc=`<div id="inv-meds-container">Loading medications…</div>`;
   } else {
     // Products tab — generic inventory items
     const items=A.invProducts||[];
@@ -3214,15 +3203,14 @@ function renderInventory(){
     <div class="tabs">${TABS.map(t=>`<button class="tab ${A.invTab===t.id?'active':''}" onclick="A.invTab='${t.id}';renderInventory()">${t.label}</button>`).join('')}</div>
     <div style="padding:14px 16px">${tc}</div>`;
 
-  // If treatments tab, re-render meds content inside inventory
+  // If treatments tab, render meds directly into inventory container
   if(A.invTab==='treatments') setTimeout(()=>{
-    renderMeds();
-    const mc=document.getElementById('page-meds')?.innerHTML;
-    if(mc){
-      const inv=document.getElementById('page-inventory');
-      if(inv) inv.querySelector('[style*="padding:14px 16px"]').innerHTML=mc.replace(/<div class="page-header">[\s\S]*?<\/div>\s*<\/div>/,'');
+    const cont=document.getElementById('inv-meds-container');
+    if(cont){
+      renderMeds();
+      cont.innerHTML=document.getElementById('page-meds')?.querySelector('[style*="padding:14px 16px"]')?.innerHTML||'';
     }
-  },50);
+  },60);
 }
 window.renderInventory=renderInventory;
 
@@ -3575,20 +3563,26 @@ async function handleSession(session){
     }
   }catch(e){
     console.error('Session error',e);
-    // Show the error visibly instead of silently falling to auth screen
-    const ls = document.getElementById('loading-screen');
-    if(ls) {
-      ls.style.display='flex';
-      ls.innerHTML=`<div style="text-align:center;padding:40px;font-family:sans-serif;max-width:380px">
-        <div style="font-size:32px;margin-bottom:12px">⚠️</div>
-        <div style="font-size:15px;font-weight:700;margin-bottom:8px">Something went wrong</div>
-        <div style="font-size:12px;color:#7a7060;margin-bottom:4px;background:#f5f2ed;padding:8px;border-radius:8px;word-break:break-all">${e.message}</div>
-        <div style="font-size:11px;color:#9e9488;margin-bottom:16px">Open browser console (F12) for details</div>
-        <button onclick="location.reload()" style="padding:10px 24px;background:#5e8b62;color:#fff;border:none;border-radius:10px;font-size:14px;cursor:pointer;margin-right:8px">Reload</button>
-        <button onclick="showAuth()" style="padding:10px 24px;background:#ede8df;color:#7a7060;border:none;border-radius:10px;font-size:14px;cursor:pointer">Sign in again</button>
-      </div>`;
+    // Log error but don't block the user — show as toast if app is loaded
+    console.error('App error:', e.message, e.stack);
+    const root = document.getElementById('root');
+    if(root && root.style.display !== 'none') {
+      // App is loaded — just show error as toast
+      toast('Error: ' + e.message + ' — try refreshing.', true);
     } else {
-      showAuth();
+      // App not loaded yet — show error screen
+      const ls = document.getElementById('loading-screen');
+      if(ls) {
+        ls.style.display='flex';
+        ls.innerHTML=`<div style="text-align:center;padding:40px;font-family:sans-serif;max-width:380px">
+          <div style="font-size:32px;margin-bottom:12px">⚠️</div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:8px">Something went wrong</div>
+          <div style="font-size:12px;color:#7a7060;margin-bottom:4px;background:#f5f2ed;padding:8px;border-radius:8px;word-break:break-all">${e.message}</div>
+          <div style="font-size:11px;color:#9e9488;margin-bottom:16px">Open browser console (F12) for details</div>
+          <button onclick="location.reload()" style="padding:10px 24px;background:#5e8b62;color:#fff;border:none;border-radius:10px;font-size:14px;cursor:pointer;margin-right:8px">Reload</button>
+          <button onclick="showAuth()" style="padding:10px 24px;background:#ede8df;color:#7a7060;border:none;border-radius:10px;font-size:14px;cursor:pointer">Sign in again</button>
+        </div>`;
+      } else { showAuth(); }
     }
   }
 }
