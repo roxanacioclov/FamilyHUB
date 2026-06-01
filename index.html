@@ -40,7 +40,8 @@ body { overflow: hidden; }
 .nav-bar { display: flex; gap: 2px; padding: 8px 12px; background: #fff; border-top: 1px solid #e0d8cc; overflow-x: auto; }
 .nav-btn { flex: 1; min-width: 60px; padding: 10px; border: none; border-radius: 8px; background: none; color: #7a7060; font-size: 12px; cursor: pointer; white-space: nowrap; }
 .nav-btn.active { background: #e0d8cc; color: #1e1b16; font-weight: 700; }
-.bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; display: flex; gap: 4px; padding: 8px 8px 4px; background: #fff; border-top: 1px solid #e0d8cc; }
+/* Fixed nav sits outside page divs so render functions can never wipe it out */
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; display: flex; gap: 4px; padding: 8px 8px 4px; background: #fff; border-top: 1px solid #e0d8cc; z-index: 500; }
 .bottom-nav-btn { flex: 1; padding: 12px; border: none; background: none; border-radius: 12px; cursor: pointer; text-align: center; font-size: 22px; color: #7a7060; transition: all 0.2s; }
 .bottom-nav-btn.active { background: #f5f2ed; color: #5e8b62; }
 .bottom-nav-btn:active { background: #ede8df; }
@@ -86,6 +87,8 @@ body { overflow: hidden; }
   <div id="page-settings" class="page"></div>
   <div id="modal-root" class="modal"></div>
   <div id="ob-root" style="position:relative"></div>
+  <!-- Persistent nav bar — lives outside all page divs so page re-renders never touch it -->
+  <div id="app-nav"></div>
 </div>
 
 <script>
@@ -229,7 +232,8 @@ async function loadAll(){
     sb.from('occurrences_meds').select('*'),
     sb.from('occurrences_other').select('*')
   ]);
-  A.family=fam?.data?.[0];A.members=mems?.data||[];A.events=evts?.data||[];A.noteGroups=ngrps?.data||[];A.notes=nts?.data||[];A.occMeds=dm?.data||[];
+  // NOTE: .maybeSingle() returns a single object, NOT an array — so we use fam?.data directly
+  A.family=fam?.data;A.members=mems?.data||[];A.events=evts?.data||[];A.noteGroups=ngrps?.data||[];A.notes=nts?.data||[];A.occMeds=dm?.data||[];
   if(!A.family){A.sampleMode=true;seedSampleData();}else{A.sampleMode=false;}
 }
 
@@ -258,6 +262,8 @@ async function initApp(){
 // ── AUTH ──
 function showAuth(){
   A.page='auth';
+  // Hide nav on the login screen — it's re-shown when goTo() is called after login
+  document.getElementById('app-nav').style.display='none';
   document.getElementById('page-auth').innerHTML=`
     <div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px">
       <div style="font-size:48px;margin-bottom:16px">👨‍👩‍👧‍👦</div>
@@ -367,6 +373,10 @@ function goTo(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(`page-${page}`).classList.add('active');
   A.page=page;
+  // Show nav bar (hidden on auth screen) and highlight the active button
+  document.getElementById('app-nav').style.display='';
+  const _pages=['home','calendar','notebook','inventory','meals','insights','settings'];
+  document.querySelectorAll('.bottom-nav-btn').forEach((b,i)=>b.classList.toggle('active',_pages[i]===page));
   if(page==='calendar')renderCal();
   else if(page==='notebook')renderNB();
   else if(page==='home')renderHome();
@@ -1208,18 +1218,19 @@ sb.auth.onAuthStateChange(async(event,session)=>{
 });
 
 const app=document.getElementById('app');
+// Build the nav bar once and inject it into the persistent #app-nav container.
+// This keeps it completely separate from page divs so renderXxx() functions
+// can never accidentally overwrite it.
 const navBar=`<div class="bottom-nav">
-  <button class="bottom-nav-btn" onclick="goTo('home')">🏠</button>
+  <button class="bottom-nav-btn active" onclick="goTo('home')">🏠</button>
   <button class="bottom-nav-btn" onclick="goTo('calendar')">📅</button>
   <button class="bottom-nav-btn" onclick="goTo('notebook')">📋</button>
   <button class="bottom-nav-btn" onclick="goTo('inventory')">📦</button>
   <button class="bottom-nav-btn" onclick="goTo('meals')">🍽️</button>
   <button class="bottom-nav-btn" onclick="goTo('insights')">📈</button>
   <button class="bottom-nav-btn" onclick="goTo('settings')">⚙️</button>
-</div>
-<button class="gear-btn" onclick="goTo('settings')">⚙️</button>`;
-
-document.querySelectorAll('[id^="page-"]').forEach(p=>p.innerHTML+=navBar);
+</div>`;
+document.getElementById('app-nav').innerHTML=navBar;
 
 initApp();
 </script>
